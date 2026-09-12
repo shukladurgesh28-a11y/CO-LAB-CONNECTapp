@@ -1,0 +1,80 @@
+# ========================
+# SECRETS & CREDENTIALS (NEVER commit these)
+# ========================
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+backend/.env.local
+frontend/.env
+frontend/.env.*
+frontend/.env.local
+!frontend/.env.example
+!backend/.env.example
+
+# Private key & certificate files
+firebase-credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cert
+service-account*.json
+gcloud-credentials*.json
+
+# ========================
+# DATABASE FILES
+# ========================
+*.db
+*.sqlite
+*.sqlite3
+backend/instance/
+
+# ========================
+# PYTHON
+# ========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+*.spec
+
+# ========================
+# NODE / FRONTEND
+# ========================
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+.npm
+*.tgz
+
+# ========================
+# IDE & OS FILES
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# LOGS & TEMP FILES
+# ========================
+*.log
+logs/
+tmp/
+temp/
+.cache/

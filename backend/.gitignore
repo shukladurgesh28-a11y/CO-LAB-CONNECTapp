@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+firebase-credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+__pycache__/
+*.py[cod]
