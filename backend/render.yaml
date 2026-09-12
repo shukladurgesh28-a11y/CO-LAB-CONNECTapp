@@ -1,0 +1,90 @@
+# =============================================================================
+# CO-LAB CONNECT — Backend (Python/Flask) on Render
+# =============================================================================
+# Render Blueprint file for the API service. Deploys the Flask app served by
+# Gunicorn (see gunicorn.conf.py). Free tier: 512 MB RAM, sleeps on idle.
+#
+#   1. Copy this repo to GitHub (outside OneDrive!).
+#   2. Render -> New -> Blueprint -> point at the repo.
+#      Render provisions the services defined below.
+#   3. Fill in the secret/DB env vars that are marked [FILL IN] in the Render
+#      dashboard (they are never committed to Git).
+#
+# Money rates MUST stay in sync with backend/config.py defaults (they are read
+# from env on this file's key AND computed by app/services/pricing.py).
+# =============================================================================
+services:
+  - type: web
+    name: colab-connect-api
+    runtime: python
+    plan: free # 512 MB / sleeps after 15 min idle — fine for demo traffic
+    # The Flask app + requirements.txt live in the /backend subfolder; render
+    # starts the build here after checkout.
+    rootDir: backend
+    # buildCommand runs in /backend (repo has an auto-Deep-Link rootDir if you
+    # split the repo; if you split, drop the `rootDir` and point here directly).
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn.conf.py run:app
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # -- Runtime -----------------------------------------------------------
+      - key: FLASK_ENV
+        value: production
+      # -- Secrets (Render auto-generates strong values; do NOT commit) ------
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      # -- Database: copy the Supabase pooler connection string here ----------
+      - key: SUPABASE_DB_URL
+        value: postgresql://postgres:[FILL IN PASSWORD]@[FILL IN HOST].supabase.co:5432/postgres
+      - key: DATABASE_URL
+        value: ${SUPABASE_DB_URL} # fallback used by config.get_database_uri()
+      - key: ALLOW_SQLITE_FALLBACK
+        value: "false"
+      # -- CORS: the deployed frontend origin --------------------------------
+      - key: CORS_ORIGINS
+        value: https://[FILL IN YOUR].vercel.app
+      # -- Demo accounts: MUST match frontend quick-login buttons -------------
+      - key: DEMO_PASSWORD
+        value: CoLab!Demo2026
+      # -- Money rates (keep identical to backend/.env / config defaults) -----
+      - key: COMMISSION_RATE
+        value: "0.10"
+      - key: WELFARE_RATE
+        value: "0.05"
+      - key: TAX_RATE
+        value: "0.00"
+      - key: COMMISSION_INCLUDE_MATERIAL
+        value: "false"
+      # -- Gateways / notifications (optional in sandbox / DB-only modes) -----
+      - key: PAYMENT_MODE
+        value: sandbox
+      - key: PAYMENT_GATEWAY_KEY
+        value: ""
+      - key: SUPABASE_URL
+        value: https://[FILL IN].supabase.co
+      - key: SUPABASE_PUBLISHABLE_KEY
+        value: ""
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: ""
+      - key: NEON_DATABASE_URL
+        value: ""
+      - key: NEON_API_KEY
+        value: ""
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: ""
+      - key: GOOGLE_MAPS_API_KEY
+        value: ""
+      # -- Mail (Resend / SMTP) — set if you want real OTP emails -------------
+      - key: MAIL_SERVER
+        value: smtp.resend.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        value: ""
+      - key: MAIL_PASSWORD
+        value: ""
+      - key: MAIL_DEFAULT_SENDER
+        value: noreply@yourdomain.com

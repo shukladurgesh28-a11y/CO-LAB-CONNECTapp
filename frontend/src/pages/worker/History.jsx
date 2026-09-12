@@ -30,7 +30,7 @@ export default function History() {
     try {
       setLoading(true);
       const res = await api.get('/api/bookings/');
-      const data = res.data?.bookings || res.data || [];
+      const data = res.data?.data || [];
       setBookings(data.filter((b) => b.status === 'completed'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to load history');
@@ -153,7 +153,7 @@ export default function History() {
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
           <p className="text-2xl font-bold text-green-600">
-            ${filteredBookings.reduce((s, b) => s + (b.totalAmount || b.amount || 0), 0).toFixed(2)}
+            ₹{filteredBookings.reduce((s, b) => s + (b.financials?.worker_payout || 0), 0).toFixed(2)}
           </p>
           <p className="text-sm text-gray-500">Total Earned</p>
         </div>
@@ -185,7 +185,7 @@ export default function History() {
         <div className="space-y-4">
           {filteredBookings.map((booking) => (
             <div
-              key={booking._id}
+              key={booking.id}
               className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:border-blue-200 hover:shadow-md transition-all"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -195,14 +195,14 @@ export default function History() {
                       <Wrench className="w-5 h-5 text-green-600" />
                     </div>
                     <h3 className="font-semibold text-gray-900">
-                      {booking.serviceName || booking.service?.name || 'Service'}
+                      {booking.service_name || booking.serviceName || booking.service?.name || 'Service'}
                     </h3>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
                     <span className="flex items-center gap-1.5">
                       <MapPin className="w-4 h-4 text-gray-400" />
-                      {booking.customerArea || booking.area || 'N/A'}
+                      {booking.location_address || booking.customerArea || booking.area || 'N/A'}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-gray-400" />
@@ -211,7 +211,7 @@ export default function History() {
                     <span className="flex items-center gap-1.5">
                       <DollarSign className="w-4 h-4 text-green-500" />
                       <span className="font-semibold text-green-600">
-                        ${(booking.totalAmount || booking.amount || 0).toFixed(2)}
+                        ₹{(booking.financials?.worker_payout || 0).toFixed(2)}
                       </span>
                     </span>
                   </div>

@@ -206,7 +206,8 @@ def create_allocation():
 
         worker.current_workload += 1
 
-        if not Booking.query.filter_by(request_id=sr.id).first():
+        booking = Booking.query.filter_by(request_id=sr.id).first()
+        if not booking:
             booking = Booking(
                 request_id=sr.id,
                 allocation_id=allocation.id,
@@ -221,6 +222,10 @@ def create_allocation():
                 final_amount=sr.service.base_price if sr.service else None,
             )
             db.session.add(booking)
+        else:
+            if booking.allocation_id != allocation.id or booking.worker_id != worker_id:
+                db.session.rollback()
+                return error_response("This request already has a booking", 409)
 
         db.session.commit()
         NotificationService().send_allocation_update(allocation, "accepted")

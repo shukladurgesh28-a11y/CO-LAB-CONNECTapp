@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from flask import current_app
 from app import db
 from app.models.booking import Booking, Payment, Invoice
+from app.services.pricing import compute_invoice
 
 
 class PaymentService:
@@ -52,6 +53,7 @@ class PaymentService:
         payment.status = "completed"
         payment.paid_at = datetime.now(timezone.utc)
         db.session.commit()
+        self.generate_invoice(payment.booking_id)
 
     def process_webhook(self, payload):
         txn_ref = payload.get("transaction_reference")
@@ -94,35 +96,28 @@ class PaymentService:
         if existing:
             return existing
 
-        service_charges = booking.total_amount or 0
-        material_charges = booking.material_charges or 0
-        
-        commission_pct = 0.10
-        welfare_fund_pct = 0.05
-        
-        commission_amount = round(service_charges * commission_pct, 2)
-        welfare_amount = round(service_charges * welfare_fund_pct, 2)
-        worker_payout = round(service_charges - commission_amount - welfare_amount, 2)
-
-        tax_rate = 0.18
-        tax_amount = round((service_charges + material_charges) * tax_rate, 2)
-        total_amount = service_charges + material_charges + tax_amount
-        net_amount = total_amount - tax_amount
-
-        count = Invoice.query.count() + 1
-        invoice_number = f"INV-{datetime.now().strftime('%Y%m')}-{count:05d}"
+        parts = compute_invoice(
+            service_amount=booking.total_amount or 0,
+            material_charges=booking.material_charges or 0,
+            commission_rate=current_app.config.get("COMMISSION_RATE", 0.10),
+            welfare_rate=current_app.config.get("WELFARE_RATE", 0.05),
+            tax_rate=current_app.config.get("TAX_RATE", 0.0),
+            commission_applies_to_material=current_app.config.get(
+                "COMMISSION_INCLUDE_MATERIAL", False
+            ),
+        )
 
         invoice = Invoice(
             booking_id=booking_id,
-            invoice_number=invoice_number,
-            service_charges=service_charges,
-            material_charges=material_charges,
-            commission_amount=commission_amount,
-            welfare_amount=welfare_amount,
-            worker_payout=worker_payout,
-            total_amount=total_amount,
-            tax_amount=tax_amount,
-            net_amount=net_amount,
+            invoice_number=self._next_invoice_number(),
+            service_charges=float(parts["service_amount"]),
+            material_charges=float(parts["material_charges"]),
+            commission_amount=float(parts["commission_amount"]),
+            welfare_amount=float(parts["welfare_amount"]),
+            worker_payout=float(parts["worker_payout"]),
+            total_amount=float(parts["net_amount"]),
+            tax_amount=float(parts["tax_amount"]),
+            net_amount=float(parts["net_amount"]),
             payment_status="pending",
         )
         db.session.add(invoice)
@@ -134,3 +129,13 @@ class PaymentService:
             db.session.commit()
 
         return invoice
+
+    def _next_invoice_number(self):
+        prefix = "INV-{0}-".format(datetime.now(timezone.utc).strftime("%Y%m"))
+        last = (
+            Invoice.query.filter(Invoice.invoice_number.like(prefix + "%"))
+            .order_by(Invoice.invoice_number.desc())
+            .first()
+        )
+        sequence = int(last.invoice_number.rsplit("-", 1)[-1]) + 1 if last else 1
+        return "{0}{1:05d}".format(prefix, sequence)

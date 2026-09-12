@@ -85,7 +85,10 @@ def get_invoice(booking_id):
         booking = Booking.query.get(booking_id)
         if not booking:
             return error_response("Booking not found", 404)
-        if booking.customer_id != int(get_jwt_identity()):
+        user = User.query.get(int(get_jwt_identity()))
+        worker = __import__("app.models.worker", fromlist=["Worker"]).Worker.query.filter_by(user_id=user.id).first() if user else None
+        is_admin = user and (user.role in ("federation_admin", "platform_admin") or booking.cooperative_id in {coop.id for coop in user.administered_cooperatives})
+        if not (booking.customer_id == int(get_jwt_identity()) or (worker and booking.worker_id == worker.id) or is_admin):
             return error_response("Unauthorized", 403)
 
         invoice = Invoice.query.filter_by(booking_id=booking_id).first()

@@ -5,6 +5,7 @@ from app import db
 from app.models.user import User
 from app.models.worker import Worker
 from app.models.booking import Booking, Allocation, ServiceRequest, ServiceHistory, Payment
+from app.models.material import MaterialRequirement
 from app.services.notification_service import NotificationService
 from app.utils.helpers import success_response, error_response
 
@@ -42,6 +43,11 @@ def create_booking():
         sr = ServiceRequest.query.get(allocation.request_id)
         if not sr:
             return error_response("Service request not found", 404)
+
+        if Booking.query.filter(
+            (Booking.request_id == allocation.request_id) | (Booking.allocation_id == allocation_id)
+        ).first():
+            return error_response("A booking already exists for this allocation", 409)
 
         booking = Booking(
             request_id=allocation.request_id,
@@ -153,6 +159,51 @@ def get_booking(booking_id):
         return error_response(f"Failed to retrieve booking: {str(e)}", 500)
 
 
+@bookings_bp.route("/<int:booking_id>/materials", methods=["POST"])
+@jwt_required()
+def add_material(booking_id):
+    try:
+        user_id = int(get_jwt_identity())
+        worker = Worker.query.filter_by(user_id=user_id).first()
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            return error_response("Booking not found", 404)
+        if not worker or booking.worker_id != worker.id:
+            return error_response("Only the assigned worker can add materials", 403)
+        if booking.status not in ("accepted", "en_route", "service_started", "in_progress"):
+            return error_response("Materials can only be added to an active booking", 409)
+
+        data = request.get_json() or {}
+        item_name = str(data.get("name", "")).strip()
+        quantity = int(data.get("quantity", 1))
+        estimated_cost = float(data.get("estimated_cost", data.get("unit_cost", 0)) or 0)
+        if not item_name or quantity < 1 or estimated_cost < 0:
+            return error_response("Material name, quantity, and a non-negative cost are required", 422)
+
+        material = MaterialRequirement(
+            booking_id=booking.id,
+            worker_id=worker.id,
+            item_name=item_name,
+            quantity=quantity,
+            estimated_cost=round(estimated_cost * quantity, 2),
+            status="approved",
+        )
+        db.session.add(material)
+        booking.material_charges = round(
+            sum((item.estimated_cost or 0) for item in booking.material_requirements) + (material.estimated_cost or 0),
+            2,
+        )
+        booking.final_amount = round((booking.total_amount or 0) + booking.material_charges, 2)
+        db.session.commit()
+        return success_response(booking.to_dict(), "Material added")
+    except (TypeError, ValueError):
+        db.session.rollback()
+        return error_response("Quantity and cost must be valid numbers", 422)
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"Failed to add material: {str(e)}", 500)
+
+
 @bookings_bp.route("/<int:booking_id>/status", methods=["PATCH"])
 @jwt_required()
 def update_booking_status(booking_id):
@@ -222,16 +273,17 @@ def update_booking_status(booking_id):
 
         if new_status == "completed":
             sr = ServiceRequest.query.get(booking.request_id)
-            history = ServiceHistory(
-                customer_id=booking.customer_id,
-                worker_id=booking.worker_id,
-                cooperative_id=booking.cooperative_id,
-                booking_id=booking.id,
-                service_name=sr.service.name if sr and sr.service else None,
-                service_date=booking.service_date,
-                amount=booking.final_amount,
-            )
-            db.session.add(history)
+            if not ServiceHistory.query.filter_by(booking_id=booking.id).first():
+                history = ServiceHistory(
+                    customer_id=booking.customer_id,
+                    worker_id=booking.worker_id,
+                    cooperative_id=booking.cooperative_id,
+                    booking_id=booking.id,
+                    service_name=sr.service.name if sr and sr.service else None,
+                    service_date=booking.service_date,
+                    amount=booking.final_amount,
+                )
+                db.session.add(history)
 
             worker = Worker.query.get(booking.worker_id)
             if worker:

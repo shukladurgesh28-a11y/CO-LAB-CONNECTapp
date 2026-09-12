@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Calendar, Users, CheckCircle, Clock, TrendingUp, ExternalLink } from 'lucide-react';
+import { Search, Filter, Calendar, Users, CheckCircle, Clock, TrendingUp, ExternalLink, AlertTriangle } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';

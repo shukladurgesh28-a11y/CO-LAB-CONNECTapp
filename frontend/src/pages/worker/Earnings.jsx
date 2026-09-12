@@ -58,7 +58,7 @@ export default function Earnings() {
     try {
       setLoading(true);
       const res = await api.get('/api/bookings/');
-      const data = res.data?.bookings || res.data || [];
+      const data = res.data?.data || [];
       setBookings(data.filter((b) => b.status === 'completed'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to load earnings');
@@ -85,7 +85,7 @@ export default function Earnings() {
   }, [bookings, dateFilter]);
 
   const totalEarnings = filteredBookings.reduce(
-    (sum, b) => sum + (b.totalAmount || b.amount || 0),
+    (sum, b) => sum + (b.financials?.worker_payout || 0),
     0
   );
 
@@ -97,7 +97,7 @@ export default function Earnings() {
       const d = new Date(b.completedAt || b.updatedAt || b.createdAt);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     })
-    .reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0);
+    .reduce((sum, b) => sum + (b.financials?.worker_payout || 0), 0);
 
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
@@ -107,7 +107,7 @@ export default function Earnings() {
       const d = new Date(b.completedAt || b.updatedAt || b.createdAt);
       return d >= startOfWeek;
     })
-    .reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0);
+    .reduce((sum, b) => sum + (b.financials?.worker_payout || 0), 0);
 
   // Chart data: last 6 months
   const chartData = useMemo(() => {
@@ -123,7 +123,7 @@ export default function Earnings() {
           const bd = new Date(b.completedAt || b.updatedAt || b.createdAt);
           return bd.getMonth() === month && bd.getFullYear() === year;
         })
-        .reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0);
+        .reduce((sum, b) => sum + (b.financials?.worker_payout || 0), 0);
       months.push({ name: label, earnings: Number(earnings.toFixed(2)) });
     }
     return months;

@@ -46,6 +46,12 @@ class Config:
     GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
     PAYMENT_GATEWAY_KEY = os.getenv("PAYMENT_GATEWAY_KEY", "")
     PAYMENT_MODE = os.getenv("PAYMENT_MODE", "sandbox").lower()
+
+    # Money math rates - consumed by app/services/pricing.py (single source of truth)
+    COMMISSION_RATE = float(os.getenv("COMMISSION_RATE", "0.10"))
+    WELFARE_RATE = float(os.getenv("WELFARE_RATE", "0.05"))
+    TAX_RATE = float(os.getenv("TAX_RATE", "0.0"))
+    COMMISSION_INCLUDE_MATERIAL = os.getenv("COMMISSION_INCLUDE_MATERIAL", "false").lower() == "true"
     OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
     OTP_RESEND_COOLDOWN_SECONDS = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))
     OTP_EXPOSE_IN_RESPONSE = os.getenv("OTP_EXPOSE_IN_RESPONSE", "false").lower() == "true"

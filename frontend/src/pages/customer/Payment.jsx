@@ -80,10 +80,10 @@ export default function Payment() {
     );
   }
 
-  const amount = booking.total_amount || 0;
-  const serviceCharges = booking.service_charges || amount * 0.85;
+  const amount = booking.final_amount || booking.total_amount || 0;
+  const serviceCharges = booking.total_amount || 0;
   const materialCharges = booking.material_charges || 0;
-  const tax = booking.tax || amount * 0.18;
+  const tax = booking.tax || booking.tax_amount || 0;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -65,8 +65,8 @@ export default function BookingDetail() {
         api.get(`/bookings/${id}`),
         api.get(`/ratings/booking/${id}`).catch(() => ({ data: null })),
       ]);
-      setBooking(bookingRes.data.booking || bookingRes.data.data || bookingRes.data);
-      setRatingData(ratingRes.data?.rating || ratingRes.data || null);
+      setBooking(bookingRes.data?.data || bookingRes.data?.booking || bookingRes.data);
+      setRatingData(ratingRes.data?.data || null);
     } catch (err) {
       console.error('Failed to fetch booking:', err);
       toast.error('Failed to load booking details');
@@ -77,7 +77,10 @@ export default function BookingDetail() {
 
   useEffect(() => {
     fetchBooking();
-  }, [fetchBooking]);
+    if (['completed', 'cancelled'].includes(booking?.status)) return undefined;
+    const interval = window.setInterval(fetchBooking, 15000);
+    return () => window.clearInterval(interval);
+  }, [fetchBooking, booking?.status]);
 
   useRealtimeSync({
     tables: ['bookings', 'payments', 'notifications'],
@@ -274,20 +277,20 @@ export default function BookingDetail() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Total Amount</p>
-              <p className="text-2xl font-bold text-gray-900">₹{booking.total_amount.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">₹{(booking.final_amount ?? booking.total_amount).toLocaleString()}</p>
             </div>
             {booking.payment_status === 'paid' ? (
               <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
                 ✓ Paid
               </span>
-            ) : (
+            ) : booking.status === 'completed' ? (
               <button
                 onClick={() => navigate(`/customer/payment/${id}`)}
                 className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-all duration-200"
               >
                 Pay Now
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -353,7 +356,7 @@ export default function BookingDetail() {
       )}
 
       {/* Cancel */}
-      {['pending', 'reviewing'].includes(booking.status) && (
+      {['pending', 'reviewing', 'confirmed', 'accepted'].includes(booking.status) && (
         <div className="mt-6">
           <button
             onClick={handleCancel}

@@ -97,6 +97,10 @@ class Allocation(db.Model):
 
 class Booking(db.Model):
     __tablename__ = "bookings"
+    __table_args__ = (
+        db.UniqueConstraint("request_id", name="uq_bookings_request_id"),
+        db.UniqueConstraint("allocation_id", name="uq_bookings_allocation_id"),
+    )
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     request_id = db.Column(db.Integer, db.ForeignKey("service_requests.id"), nullable=False)
@@ -126,6 +130,7 @@ class Booking(db.Model):
 
     def to_dict(self):
         payment = next((item for item in reversed(self.payments) if item.status not in ("failed",)), None)
+        invoice = self.invoice
         return {
             "id": self.id,
             "request_id": self.request_id,
@@ -151,6 +156,10 @@ class Booking(db.Model):
             "worker_name": self.worker.name if self.worker else None,
             "cooperative_name": self.cooperative.name if self.cooperative else None,
             "payment_status": "paid" if payment and payment.status == "completed" else (payment.status if payment else "pending"),
+            "payment": payment.to_dict() if payment else None,
+            "financials": invoice.to_dict() if invoice else None,
+            "materials": [item.to_dict() for item in self.material_requirements],
+            "rating": self.rating.to_dict() if self.rating else None,
         }
 
 
@@ -184,6 +193,9 @@ class Invoice(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint("booking_id", name="uq_invoices_booking_id"),
+    )
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     service_charges = db.Column(db.Float, nullable=True)
     material_charges = db.Column(db.Float, nullable=True)
@@ -221,6 +233,9 @@ class Rating(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint("booking_id", name="uq_ratings_booking_id"),
+    )
     customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
@@ -256,6 +271,9 @@ class ServiceHistory(db.Model):
     worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
     cooperative_id = db.Column(db.Integer, db.ForeignKey("cooperatives.id"), nullable=False)
     booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint("booking_id", name="uq_service_history_booking_id"),
+    )
     service_name = db.Column(db.String(255), nullable=True)
     service_date = db.Column(db.Date, nullable=True)
     amount = db.Column(db.Float, nullable=True)
