@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import toast from 'react-hot-toast';
 import { useRealtimeSync } from '../../api/realtime';
+import ServiceMap from '../../components/ServiceMap';
 
 const UrgencyBadge = ({ urgency }) => {
   const colors = {
@@ -261,13 +262,31 @@ const RequestDetail = () => {
 
           {request.latitude && request.longitude && (
             <div className="mt-6 pt-6 border-t border-gray-100">
-              <label className="text-sm font-medium text-gray-500 mb-2 block">Location</label>
-              <div className="h-48 bg-gray-100 rounded-lg overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
-                  <MapPin className="w-8 h-8 mr-2" />
-                  <span>Map View: {request.latitude}, {request.longitude}</span>
-                </div>
-              </div>
+              <label className="text-sm font-medium text-gray-500 mb-2 block">
+                Location — request plus recommended workers
+              </label>
+              <ServiceMap
+                height={220}
+                center={{ lat: request.latitude, lng: request.longitude }}
+                markers={[
+                  {
+                    lat: request.latitude,
+                    lng: request.longitude,
+                    label: 'Service request',
+                    sub: request.location,
+                    kind: 'request',
+                  },
+                  ...recommendations
+                    .filter((rec) => Number.isFinite(rec.worker?.latitude) && Number.isFinite(rec.worker?.longitude))
+                    .map((rec) => ({
+                      lat: rec.worker.latitude,
+                      lng: rec.worker.longitude,
+                      label: `${rec.worker_name} (${rec.match_score}% match)`,
+                      sub: (rec.skills || []).slice(0, 3).join(', '),
+                      kind: 'worker',
+                    })),
+                ]}
+              />
             </div>
           )}
         </div>

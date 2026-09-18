@@ -269,7 +269,7 @@ export default function AssignedJobs() {
                       disabled={updatingId === job.id}
                       className="flex items-center gap-1.5 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
-                      {updatingId === job._id ? (
+                      {updatingId === (job.id ?? job._id) ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Play className="w-4 h-4" />
@@ -284,7 +284,7 @@ export default function AssignedJobs() {
                         disabled={updatingId === job.id}
                       className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
-                      {updatingId === job._id ? (
+                      {updatingId === (job.id ?? job._id) ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <CheckCircle className="w-4 h-4" />

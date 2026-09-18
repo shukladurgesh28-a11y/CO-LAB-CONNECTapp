@@ -1,10 +1,15 @@
-from app.models.user import User
-from app.models.worker import Worker, WorkerSkill, WorkerCertification, WorkerAvailability
+from app.models.user import User, OtpChallenge
+from app.models.worker import (
+    Worker, WorkerSkill, WorkerCertification, WorkerAvailability,
+    VerificationEvidence, VerificationHistory, WorkerComplianceRecord,
+    WorkerViolation,
+)
 from app.models.cooperative import Cooperative, Federation
 from app.models.service import ServiceCategory, Service, Skill
 from app.models.booking import (
     ServiceRequest, Allocation, Booking, Payment,
-    Invoice, Rating, ServiceHistory,
+    Invoice, Rating, ServiceHistory, MatchingRecommendation,
+    AllocationOffer, Settlement,
 )
 from app.models.notification import Notification
 from app.models.welfare import WorkerWelfare
@@ -12,12 +17,15 @@ from app.models.demand import DemandRecord
 from app.models.material import MaterialRequirement
 
 __all__ = [
-    "User",
+    "User", "OtpChallenge",
     "Worker", "WorkerSkill", "WorkerCertification", "WorkerAvailability",
+    "VerificationEvidence", "VerificationHistory", "WorkerComplianceRecord",
+    "WorkerViolation",
     "Cooperative", "Federation",
     "ServiceCategory", "Service", "Skill",
     "ServiceRequest", "Allocation", "Booking", "Payment",
-    "Invoice", "Rating", "ServiceHistory",
+    "Invoice", "Rating", "ServiceHistory", "MatchingRecommendation",
+    "AllocationOffer", "Settlement",
     "Notification",
     "WorkerWelfare",
     "DemandRecord",

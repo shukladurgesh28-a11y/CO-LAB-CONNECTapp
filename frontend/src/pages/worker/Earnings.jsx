@@ -71,9 +71,11 @@ export default function Earnings() {
     fetchBookings();
   }, [fetchBookings]);
 
+  const completedAt = (b) => new Date(b.actual_end || b.updated_at || b.created_at);
+
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
-      const d = new Date(b.completedAt || b.updatedAt || b.createdAt);
+      const d = completedAt(b);
       if (dateFilter.start && d < new Date(dateFilter.start)) return false;
       if (dateFilter.end) {
         const end = new Date(dateFilter.end);
@@ -94,7 +96,7 @@ export default function Earnings() {
   const thisYear = now.getFullYear();
   const monthlyEarnings = bookings
     .filter((b) => {
-      const d = new Date(b.completedAt || b.updatedAt || b.createdAt);
+      const d = completedAt(b);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     })
     .reduce((sum, b) => sum + (b.financials?.worker_payout || 0), 0);
@@ -104,7 +106,7 @@ export default function Earnings() {
   startOfWeek.setHours(0, 0, 0, 0);
   const weeklyEarnings = bookings
     .filter((b) => {
-      const d = new Date(b.completedAt || b.updatedAt || b.createdAt);
+      const d = completedAt(b);
       return d >= startOfWeek;
     })
     .reduce((sum, b) => sum + (b.financials?.worker_payout || 0), 0);
@@ -120,7 +122,7 @@ export default function Earnings() {
       const label = d.toLocaleString('default', { month: 'short' });
       const earnings = bookings
         .filter((b) => {
-          const bd = new Date(b.completedAt || b.updatedAt || b.createdAt);
+          const bd = completedAt(b);
           return bd.getMonth() === month && bd.getFullYear() === year;
         })
         .reduce((sum, b) => sum + (b.financials?.worker_payout || 0), 0);
@@ -189,7 +191,7 @@ export default function Earnings() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#9ca3af' }}
-                tickFormatter={(val) => `$${val}`}
+                tickFormatter={(val) => `₹${val}`}
               />
               <Tooltip
                 contentStyle={{
@@ -197,7 +199,7 @@ export default function Earnings() {
                   border: '1px solid #e5e7eb',
                   boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                 }}
-                formatter={(val) => [`$${val}`, 'Earnings']}
+                formatter={(val) => [`₹${val}`, 'Earnings']}
               />
               <Area
                 type="monotone"
@@ -283,18 +285,18 @@ export default function Earnings() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredBookings.map((booking) => (
-                  <tr key={booking._id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={booking.id ?? booking._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {new Date(booking.completedAt || booking.updatedAt || booking.createdAt).toLocaleDateString()}
+                      {completedAt(booking).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {booking.serviceName || booking.service?.name || '—'}
+                      {booking.service_name || booking.service?.name || '—'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {booking.customerArea || booking.area || '—'}
+                      {booking.location_address || booking.area || '—'}
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-green-600 text-right">
-                      ₹{(booking.totalAmount || booking.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{(booking.financials?.worker_payout || booking.total_amount || booking.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">

@@ -10,11 +10,30 @@ def get_database_uri():
     if supabase_db_url and "[YOUR-PASSWORD]" not in supabase_db_url:
         return supabase_db_url
 
-    return (
+    configured = (
         os.getenv("NEON_DATABASE_URL")
         or os.getenv("DATABASE_URL")
-        or "sqlite:///collabconnect.db"
+        or os.getenv("SQLALCHEMY_DATABASE_URL")
+        or os.getenv("SQLALCHEMY_DATABASE_URI")
     )
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    instance_dir = os.path.join(base_dir, "instance")
+    os.makedirs(instance_dir, exist_ok=True)
+    if configured:
+        # Resolve relative SQLite URLs against the backend directory so every
+        # process (run.py, seed scripts, tests, gunicorn workers) uses the SAME
+        # database file regardless of current working directory. A relative
+        # sqlite path is the classic cause of "booking disappears after login
+        # as another role" during local development.
+        if configured.startswith("sqlite:///") and not configured.startswith("sqlite:////"):
+            rel_path = configured[len("sqlite:///"):]
+            if not os.path.isabs(rel_path):
+                abs_path = os.path.normpath(os.path.join(base_dir, rel_path)).replace("\\", "/")
+                return f"sqlite:///{abs_path}"
+        return configured
+
+    db_file = os.path.join(instance_dir, "collabconnect.db").replace("\\", "/")
+    return f"sqlite:///{db_file}"
 
 
 class Config:
@@ -49,7 +68,7 @@ class Config:
 
     # Money math rates - consumed by app/services/pricing.py (single source of truth)
     COMMISSION_RATE = float(os.getenv("COMMISSION_RATE", "0.10"))
-    WELFARE_RATE = float(os.getenv("WELFARE_RATE", "0.05"))
+    WELFARE_RATE = float(os.getenv("WELFARE_RATE", "0.02"))
     TAX_RATE = float(os.getenv("TAX_RATE", "0.0"))
     COMMISSION_INCLUDE_MATERIAL = os.getenv("COMMISSION_INCLUDE_MATERIAL", "false").lower() == "true"
     OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))

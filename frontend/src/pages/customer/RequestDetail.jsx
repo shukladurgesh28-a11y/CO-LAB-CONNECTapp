@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Loader2, MapPin } from 'lucide-react';
 import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
+import ServiceMap from '../../components/ServiceMap';
 import toast from 'react-hot-toast';
 import { useRealtimeSync } from '../../api/realtime';
 
@@ -54,6 +55,21 @@ export default function RequestDetail() {
           <p>Urgency: <span className="font-medium capitalize">{request.urgency}</span></p>
         </div>
         {request.description && <p className="mt-6 pt-6 border-t border-gray-100 text-gray-700">{request.description}</p>}
+        {Number.isFinite(request.location_lat) && Number.isFinite(request.location_lng) && (
+          <div className="mt-6">
+            <ServiceMap
+              height={220}
+              center={{ lat: request.location_lat, lng: request.location_lng }}
+              markers={[{
+                lat: request.location_lat,
+                lng: request.location_lng,
+                label: 'Service location',
+                sub: request.location_address,
+                kind: 'request',
+              }]}
+            />
+          </div>
+        )}
         <p className="mt-6 text-sm text-gray-500">Your cooperative will review this request and assign a verified worker.</p>
       </div>
     </div>

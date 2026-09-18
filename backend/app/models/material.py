@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.helpers import money_float
 
 
 class MaterialRequirement(db.Model):
@@ -11,7 +12,7 @@ class MaterialRequirement(db.Model):
     item_name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     quantity = db.Column(db.Integer, default=1, nullable=False)
-    estimated_cost = db.Column(db.Float, nullable=True)
+    estimated_cost = db.Column(db.Numeric(12, 2), nullable=True)
     status = db.Column(db.String(20), default="pending", nullable=False)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -27,7 +28,7 @@ class MaterialRequirement(db.Model):
             "item_name": self.item_name,
             "description": self.description,
             "quantity": self.quantity,
-            "estimated_cost": self.estimated_cost,
+            "estimated_cost": money_float(self.estimated_cost),
             "status": self.status,
             "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,

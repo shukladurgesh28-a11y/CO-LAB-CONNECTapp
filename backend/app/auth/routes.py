@@ -1,18 +1,40 @@
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import bcrypt
 import pyotp
 from app import db
-from app.models.user import User
+from app.models.user import User, OtpChallenge
 from app.models.worker import Worker
 from app.utils.helpers import generate_otp, success_response, error_response
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-otp_store = {}
 login_attempts = {}
+
+
+def _utcnow():
+    # Naive UTC for SQLite-safe comparisons (SQLite drops tzinfo on read).
+    return datetime.utcnow()
+
+
+def _create_challenge(user, phone):
+    """Replace any pending challenge for this phone with a fresh one."""
+    OtpChallenge.query.filter_by(phone=phone, verified_at=None).delete()
+    otp = generate_otp()
+    challenge = OtpChallenge(
+        user_id=user.id,
+        phone=phone,
+        otp_hash=OtpChallenge.hash_otp(otp),
+        expires_at=_utcnow() + timedelta(seconds=300),
+        attempts=0,
+        max_attempts=int(current_app.config.get("OTP_MAX_ATTEMPTS", 5)),
+        last_sent_at=_utcnow(),
+        verified_at=None,
+    )
+    db.session.add(challenge)
+    return otp, challenge
 
 
 def _login_key(identifier):
@@ -80,22 +102,14 @@ def register():
             )
             db.session.add(worker)
 
-        otp = generate_otp()
-        otp_store[phone] = {
-            "otp": otp,
-            "expires_at": time.time() + 300,
-            "user_id": user.id,
-            "attempts": 0,
-            "sent_at": time.time(),
-        }
+        otp, _challenge = _create_challenge(user, phone)
 
         db.session.commit()
-        access_token = create_access_token(identity=str(user.id))
 
+        # No usable JWT is issued before OTP verification (Phase 3).
         response = {
             "success": True,
             "message": "Registration successful. OTP sent for verification.",
-            "token": access_token,
             "user": user.to_dict(),
         }
         if current_app.config.get("OTP_EXPOSE_IN_RESPONSE"):
@@ -171,31 +185,40 @@ def verify_otp():
         if not phone or not otp_code:
             return error_response("Phone and OTP are required", 400)
 
-        stored = otp_store.get(phone)
-        if not stored:
+        challenge = (
+            OtpChallenge.query.filter_by(phone=phone, verified_at=None)
+            .order_by(OtpChallenge.id.desc())
+            .first()
+        )
+        if not challenge:
             return error_response("No OTP found for this phone number", 404)
 
-        if time.time() > stored["expires_at"]:
-            del otp_store[phone]
+        if _utcnow() > challenge.expires_at:
+            db.session.delete(challenge)
+            db.session.commit()
             return error_response("OTP has expired. Please request a new one.", 410)
 
-        stored["attempts"] += 1
-        if stored["attempts"] > current_app.config["OTP_MAX_ATTEMPTS"]:
-            del otp_store[phone]
+        challenge.attempts += 1
+        if challenge.attempts > challenge.max_attempts:
+            db.session.delete(challenge)
+            db.session.commit()
             return error_response("Too many invalid OTP attempts. Request a new OTP.", 429)
 
-        if stored["otp"] != otp_code:
+        if not challenge.check_otp(otp_code):
+            db.session.commit()
             return error_response("Invalid OTP", 401)
 
-        user = User.query.get(stored["user_id"])
+        user = User.query.get(challenge.user_id)
         if user:
             user.is_verified = True
-            db.session.commit()
+        challenge.verified_at = _utcnow()
+        db.session.commit()
 
-        del otp_store[phone]
+        # JWT is issued only after successful verification (Phase 3).
+        access_token = create_access_token(identity=str(user.id)) if user else None
 
         return success_response(
-            {"user": user.to_dict() if user else None},
+            {"user": user.to_dict() if user else None, "token": access_token},
             "OTP verified successfully",
         )
     except Exception as e:
@@ -215,25 +238,24 @@ def resend_otp():
             return error_response("Phone number is required", 400)
 
         user = User.query.filter_by(phone=phone).first()
-        if not user:
-            return error_response("User not found", 404)
+        # Generic response to prevent user enumeration; only existing,
+        # unverified users actually get a new challenge.
+        if user and not user.is_verified:
+            latest = (
+                OtpChallenge.query.filter_by(phone=phone, verified_at=None)
+                .order_by(OtpChallenge.id.desc())
+                .first()
+            )
+            cooldown = int(current_app.config.get("OTP_RESEND_COOLDOWN_SECONDS", 30))
+            if latest and latest.last_sent_at and (_utcnow() - latest.last_sent_at).total_seconds() < cooldown:
+                return error_response("Please wait before requesting another OTP", 429)
+            otp, _challenge = _create_challenge(user, phone)
+            db.session.commit()
+        else:
+            otp = None
 
-        stored = otp_store.get(phone)
-        now = time.time()
-        if stored and now - stored.get("sent_at", 0) < current_app.config["OTP_RESEND_COOLDOWN_SECONDS"]:
-            return error_response("Please wait before requesting another OTP", 429)
-
-        otp = generate_otp()
-        otp_store[phone] = {
-            "otp": otp,
-            "expires_at": time.time() + 300,
-            "user_id": user.id,
-            "attempts": 0,
-            "sent_at": time.time(),
-        }
-
-        response = {"message": "OTP resent successfully"}
-        if current_app.config.get("OTP_EXPOSE_IN_RESPONSE"):
+        response = {"message": "If an unverified account exists for this number, an OTP has been sent"}
+        if otp and current_app.config.get("OTP_EXPOSE_IN_RESPONSE"):
             response["otp"] = otp
         return success_response(
             response,

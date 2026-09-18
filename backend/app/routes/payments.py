@@ -4,7 +4,7 @@ from flask import Blueprint, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models.user import User
-from app.models.booking import Booking, Payment, Invoice
+from app.models.booking import Booking, Payment, Invoice, Settlement
 from app.services.payment_service import PaymentService
 from app.services.notification_service import NotificationService
 from app.utils.helpers import success_response, error_response
@@ -99,3 +99,25 @@ def get_invoice(booking_id):
         return success_response(invoice.to_dict(), "Invoice retrieved")
     except Exception as e:
         return error_response(f"Failed to retrieve invoice: {str(e)}", 500)
+
+
+@payments_bp.route("/settlement/<int:booking_id>", methods=["GET"])
+@jwt_required()
+def get_settlement(booking_id):
+    """Settlement ledger read with the same ownership scope as invoices."""
+    try:
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            return error_response("Booking not found", 404)
+        user = User.query.get(int(get_jwt_identity()))
+        worker = __import__("app.models.worker", fromlist=["Worker"]).Worker.query.filter_by(user_id=user.id).first() if user else None
+        is_admin = user and (user.role in ("federation_admin", "platform_admin") or booking.cooperative_id in {coop.id for coop in user.administered_cooperatives})
+        if not (booking.customer_id == int(get_jwt_identity()) or (worker and booking.worker_id == worker.id) or is_admin):
+            return error_response("Unauthorized", 403)
+
+        settlement = Settlement.query.filter_by(booking_id=booking_id).first()
+        if not settlement:
+            return error_response("Settlement not found for this booking", 404)
+        return success_response(settlement.to_dict(), "Settlement retrieved")
+    except Exception as e:
+        return error_response(f"Failed to retrieve settlement: {str(e)}", 500)

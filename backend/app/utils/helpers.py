@@ -1,4 +1,18 @@
 import math
+from decimal import Decimal
+
+
+def money_float(value):
+    """Serialize a Numeric/Decimal money column for JSON responses.
+
+    Money is stored as Numeric(12, 2) and computed with Decimal internally;
+    the API boundary converts to float so jsonify output is unchanged.
+    """
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
 
 
 def generate_otp(length=6):

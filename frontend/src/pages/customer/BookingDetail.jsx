@@ -19,8 +19,11 @@ import {
   FileText,
   XCircle,
   CheckCircle,
+  QrCode,
+  Scan,
 } from 'lucide-react';
 import { useRealtimeSync } from '../../api/realtime';
+import QRScannerModal from '../../components/QRScannerModal';
 
 const STEPS = [
   'pending',
@@ -58,6 +61,7 @@ export default function BookingDetail() {
   const [feedback, setFeedback] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const fetchBooking = useCallback(async () => {
     try {
@@ -197,6 +201,40 @@ export default function BookingDetail() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* On-Site Service Verification Pass (QR Code) */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-6 mb-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-6 border border-blue-800/40">
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 bg-white p-2 rounded-xl shadow-inner flex flex-col items-center justify-center flex-shrink-0">
+            <QrCode className="w-12 h-12 text-gray-900" />
+            <span className="text-[9px] font-mono text-gray-700 uppercase font-bold mt-0.5">
+              CC-SVC-{booking.id}
+            </span>
+          </div>
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-500/30 text-blue-200 rounded-full text-xs font-semibold mb-1">
+              <QrCode className="w-3 h-3 text-blue-300" />
+              On-Site Check-In Pass
+            </div>
+            <h3 className="font-bold text-lg text-white">Service Verification Pass</h3>
+            <p className="text-xs text-blue-200 max-w-md mt-0.5">
+              Present this pass to your assigned worker upon arrival to authenticate their visit and securely record service start and completion.
+            </p>
+            <p className="text-xs font-mono text-emerald-300 mt-1 font-bold">
+              Pass Token: CC-SVC-{booking.id}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setScannerOpen(true)}
+            className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-xl transition-colors shadow flex items-center gap-2"
+          >
+            <Scan className="w-4 h-4" />
+            Scan / Verify Pass
+          </button>
         </div>
       </div>
 
@@ -367,6 +405,15 @@ export default function BookingDetail() {
             {cancelling ? 'Cancelling...' : 'Cancel Booking'}
           </button>
         </div>
+      )}
+      {/* QR Scanner Modal */}
+      {booking && (
+        <QRScannerModal
+          isOpen={scannerOpen}
+          onClose={() => setScannerOpen(false)}
+          initialCode={`CC-SVC-${booking.id}`}
+          onVerified={() => fetchBooking()}
+        />
       )}
     </div>
   );

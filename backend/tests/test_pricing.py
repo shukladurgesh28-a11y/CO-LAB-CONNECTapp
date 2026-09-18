@@ -17,35 +17,68 @@ def test_zero_amounts_produce_all_zeros():
     assert parts["worker_payout"] == Decimal("0.00")
 
 
+def test_demo_economics_500_service():
+    # Single source of truth: commission 10%, welfare 2%.
+    parts = compute_invoice(500, 0)
+    assert parts["commission_amount"] == Decimal("50.00")
+    assert parts["welfare_amount"] == Decimal("10.00")
+    assert parts["net_amount"] == Decimal("500.00")
+    assert parts["worker_payout"] == Decimal("440.00")
+
+
 def test_plain_service_1000_with_18pct_tax():
     parts = compute_invoice(1000.00, 0, tax_rate=0.18)
     assert parts["commission_amount"] == Decimal("100.00")
-    assert parts["welfare_amount"] == Decimal("50.00")
+    assert parts["welfare_amount"] == Decimal("20.00")
     assert parts["tax_amount"] == Decimal("180.00")
     assert parts["net_amount"] == Decimal("1180.00")
-    assert parts["worker_payout"] == Decimal("1030.00")
+    assert parts["worker_payout"] == Decimal("1060.00")
 
 
 def test_materials_are_default_exempt_from_commission_and_welfare():
     parts = compute_invoice(800, 200)
     assert parts["gross_total"] == Decimal("1000.00")
     assert parts["commission_amount"] == Decimal("80.00")
-    assert parts["welfare_amount"] == Decimal("40.00")
-    assert parts["worker_payout"] == Decimal("880.00")
+    assert parts["welfare_amount"] == Decimal("16.00")
+    assert parts["worker_payout"] == Decimal("904.00")
 
 
 def test_commission_on_materials_flag_includes_them():
     parts = compute_invoice(800, 200, commission_applies_to_material=True)
     assert parts["commission_amount"] == Decimal("100.00")
-    assert parts["welfare_amount"] == Decimal("50.00")
-    assert parts["worker_payout"] == Decimal("850.00")
+    assert parts["welfare_amount"] == Decimal("20.00")
+    assert parts["worker_payout"] == Decimal("880.00")
 
 
 def test_no_integer_rounding_bug_825_dot_75():
     parts = compute_invoice("825.75")
     assert parts["commission_amount"] == Decimal("82.58")
-    assert parts["welfare_amount"] == Decimal("41.29")
-    assert parts["worker_payout"] == Decimal("701.88")
+    assert parts["welfare_amount"] == Decimal("16.52")
+    assert parts["worker_payout"] == Decimal("726.65")
+
+
+def test_paise_level_amounts():
+    penny = compute_invoice("0.01")
+    assert penny["commission_amount"] == Decimal("0.00")
+    assert penny["welfare_amount"] == Decimal("0.00")
+    assert penny["worker_payout"] == Decimal("0.01")
+    nickel = compute_invoice("0.05")
+    assert nickel["worker_payout"] == (
+        nickel["net_amount"] - nickel["commission_amount"] - nickel["welfare_amount"]
+    )
+
+
+def test_999_99_and_56_and_large_amounts():
+    parts = compute_invoice("999.99")
+    assert parts["commission_amount"] == Decimal("100.00")
+    assert parts["welfare_amount"] == Decimal("20.00")
+    assert parts["worker_payout"] == Decimal("879.99")
+    assert compute_invoice("56.00")["worker_payout"] == Decimal("49.28")
+    big = compute_invoice("10000000.00", "250000.00")
+    assert big["gross_total"] == Decimal("10250000.00")
+    assert big["worker_payout"] == (
+        big["net_amount"] - big["commission_amount"] - big["welfare_amount"]
+    )
 
 
 def test_worker_payout_always_reconciles():

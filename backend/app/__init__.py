@@ -11,6 +11,103 @@ migrate = Migrate()
 jwt = JWTManager()
 mail = Mail()
 
+
+def _ensure_bookings_worker_id_nullable(app):
+    """Idempotent SQLite migration.
+
+    Databases created before ``Booking.worker_id`` was made nullable keep the
+    column as NOT NULL, which breaks request creation: a pending Booking is
+    inserted with ``worker_id=NULL`` and SQLite raises an IntegrityError (the
+    whole transaction is rolled back, so the request + booking never persist).
+
+    Rebuilds the ``bookings`` table with ``worker_id`` nullable while preserving
+    every row, the primary key, column nullability, and unique constraints
+    (recreated as named unique indexes). Foreign-key declarations are not
+    recreated on the rebuilt table (SQLite does not enforce them by default and
+    the ORM relationships are model-side).
+    """
+    uri = app.config.get("SQLALCHEMY_DATABASE_URI") or ""
+    if not uri.startswith("sqlite"):
+        return
+    from sqlalchemy import Column, Index, MetaData, Table
+    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import text
+
+    engine = db.engine
+    inspector = sa_inspect(engine)
+    if "bookings" not in inspector.get_table_names():
+        return
+    worker_col = next(
+        (col for col in inspector.get_columns("bookings") if col["name"] == "worker_id"),
+        None,
+    )
+    if worker_col is not None and worker_col.get("nullable", True):
+        return  # already nullable, nothing to do
+    if worker_col is None:
+        return
+
+    app.logger.warning(
+        "Detected bookings.worker_id NOT NULL. Rebuilding 'bookings' table so worker_id is nullable."
+    )
+    metadata = MetaData()
+    old = Table("bookings", metadata, autoload_with=engine)
+
+    new_columns = []
+    for column in old.columns:
+        kwargs = {}
+        if column.primary_key:
+            kwargs["primary_key"] = True
+        kwargs["nullable"] = True if column.name == "worker_id" else column.nullable
+        new_columns.append(Column(column.name, column.type, **kwargs))
+
+    new = Table("bookings_new", MetaData(), *new_columns)
+    column_list = ", ".join('"%s"' % column.name for column in old.columns)
+
+    with engine.connect() as connection:
+        connection = connection.execution_options(isolation_level="AUTOCOMMIT")
+        # SQLite reflection hides sqlite_autoindex* entries, so read unique
+        # indexes via PRAGMA (they back the request_id / allocation_id uniques).
+        unique_indexes = []
+        for row in connection.exec_driver_sql('PRAGMA index_list("bookings")').fetchall():
+            if not row[2]:  # unique flag
+                continue
+            name = row[1]
+            columns = [
+                r[2]
+                for r in connection.exec_driver_sql(
+                    f'PRAGMA index_info("{name}")'
+                ).fetchall()
+            ]
+            columns = [c for c in columns if c and c in new.c]
+            if columns:
+                unique_indexes.append((name, columns))
+
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        connection.exec_driver_sql("BEGIN IMMEDIATE")
+        try:
+            new.create(bind=connection)
+            for name, columns in unique_indexes:
+                Index(
+                    "ix_new_" + name,
+                    *[new.c[column] for column in columns],
+                    unique=True,
+                ).create(bind=connection)
+            connection.execute(
+                text(
+                    f'INSERT INTO "bookings_new" ({column_list}) '
+                    f'SELECT {column_list} FROM "bookings"'
+                )
+            )
+            connection.execute(text('DROP TABLE "bookings"'))
+            connection.execute(text('ALTER TABLE "bookings_new" RENAME TO "bookings"'))
+            connection.exec_driver_sql("COMMIT")
+        except Exception:
+            try:
+                connection.exec_driver_sql("ROLLBACK")
+            except Exception:
+                pass
+            raise
+
 DEFAULT_SERVICE_CATALOG = [
     ("Home & Repair", "home-repair", [
         ("Electrician", "electrician", "Electrical installation, repair, and maintenance.", 800.0),
@@ -95,6 +192,7 @@ def create_app(config_name=None):
         from app.models import user, worker, cooperative, service, booking
         from app.models import notification, welfare, demand, material, dispute
         db.create_all()
+        _ensure_bookings_worker_id_nullable(app)
 
         from app.models.user import User
         from app.models.worker import Worker

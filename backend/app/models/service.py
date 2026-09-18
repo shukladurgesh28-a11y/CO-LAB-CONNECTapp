@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.helpers import money_float
 
 
 class ServiceCategory(db.Model):
@@ -46,7 +47,7 @@ class Service(db.Model):
     availability_type = db.Column(db.String(50), default="on_demand", nullable=False)
     location_rule = db.Column(db.String(50), default="at_customer", nullable=False)
     emergency_support = db.Column(db.Boolean, default=False, nullable=False)
-    base_price = db.Column(db.Float, nullable=True)
+    base_price = db.Column(db.Numeric(12, 2), nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
@@ -65,7 +66,7 @@ class Service(db.Model):
             "availability_type": self.availability_type,
             "location_rule": self.location_rule,
             "emergency_support": self.emergency_support,
-            "base_price": self.base_price,
+            "base_price": money_float(self.base_price),
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

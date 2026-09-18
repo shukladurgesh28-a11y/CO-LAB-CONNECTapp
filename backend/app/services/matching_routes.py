@@ -20,6 +20,8 @@ def recommend_from_body():
 @jwt_required()
 def get_recommendations(request_id):
     try:
+        from app.routes.cooperative import expire_offers
+        expire_offers()
         engine = MatchingEngine()
         recommendations = engine.find_recommendations(request_id)
 

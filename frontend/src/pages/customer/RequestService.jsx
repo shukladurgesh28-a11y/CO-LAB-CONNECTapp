@@ -11,6 +11,7 @@ import {
   Clock,
   AlertTriangle,
   Send,
+  Sparkles,
 } from 'lucide-react';
 
 export default function RequestService() {
@@ -35,6 +36,7 @@ export default function RequestService() {
     preferred_time_end: '',
     urgency: 'normal',
     special_requirements: '',
+    amount: '',
   });
 
   useEffect(() => {
@@ -72,6 +74,16 @@ export default function RequestService() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleServiceChange = (e) => {
+    const serviceId = e.target.value;
+    const selected = services.find((s) => String(s.id) === String(serviceId));
+    setForm({
+      ...form,
+      service_id: serviceId,
+      amount: selected?.base_price ? String(selected.base_price) : '',
+    });
+  };
+
   const handleLocationPick = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -91,9 +103,30 @@ export default function RequestService() {
 
   const today = new Date().toISOString().split('T')[0];
 
+  const handleDemoAutofill = () => {
+    const electrician = services.find((s) => /electrician/i.test(s.name || '') || s.slug === 'electrician')
+      || services.find((s) => s.category === 'home-repair')
+      || services[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    setForm({
+      category: electrician?.category || 'home-repair',
+      service_id: electrician ? String(electrician.id) : '',
+      description: 'Fix faulty bedroom wiring and replace the circuit breaker switch.',
+      address: 'Flat 402, Shanti Heights, Model Colony, Pune 411016',
+      location: { lat: 18.5204, lng: 73.8567 },
+      preferred_date: tomorrow,
+      preferred_time_start: '11:00',
+      preferred_time_end: '12:00',
+      urgency: 'normal',
+      special_requirements: 'Please bring standard testing tools.',
+      amount: electrician?.base_price ? String(electrician.base_price) : '500',
+    });
+    toast.success('Demo details filled — review and submit!');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.service_id || !form.description || !form.address || !form.preferred_date) {
+    if (!form.service_id || !form.description || !form.address || !form.preferred_date || !form.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -110,6 +143,7 @@ export default function RequestService() {
         preferred_time_end: form.preferred_time_end || undefined,
         urgency: form.urgency,
         special_requirements: form.special_requirements || undefined,
+        amount: form.amount ? parseFloat(form.amount) : undefined,
       });
       toast.success(response?.message || 'Service request submitted and sent to the cooperative!');
       const requestId = response?.data?.id || response?.id;
@@ -139,7 +173,18 @@ export default function RequestService() {
         <span className="text-sm font-medium">Back</span>
       </button>
 
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Request a Service</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Request a Service</h1>
+        <button
+          type="button"
+          onClick={handleDemoAutofill}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm font-semibold"
+          title="Fill the form with demo values (Electrician, ₹500, Pune)"
+        >
+          <Sparkles size={16} />
+          Fill demo details
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Category */}
@@ -164,14 +209,37 @@ export default function RequestService() {
           <select
             name="service_id"
             value={form.service_id}
-            onChange={handleChange}
+            onChange={handleServiceChange}
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm bg-white"
           >
             <option value="">Select a service</option>
             {filteredServices.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name} {s.base_price ? `(₹${Number(s.base_price).toLocaleString('en-IN')})` : ''}
+              </option>
             ))}
           </select>
+        </div>
+
+        {/* Amount */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹) *</label>
+          <div className="relative">
+            <span className="absolute left-3 top-2.5 text-gray-400 text-sm">₹</span>
+            <input
+              type="number"
+              name="amount"
+              min="1"
+              step="0.01"
+              value={form.amount}
+              onChange={handleChange}
+              placeholder="e.g. 500"
+              className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm"
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Amount the customer will pay. The cooperative and welfare deductions are applied automatically.
+          </p>
         </div>
 
         {/* Description */}

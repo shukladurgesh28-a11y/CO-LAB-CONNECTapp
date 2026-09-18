@@ -15,7 +15,11 @@ class Worker(db.Model):
     longitude = db.Column(db.Float, nullable=True)
     service_area_km = db.Column(db.Float, default=10.0, nullable=False)
     verification_status = db.Column(
-        db.Enum("pending", "verified", "rejected", name="verification_status"),
+        db.Enum(
+            "pending", "under_review", "verified",
+            "rejected", "suspended", "expired",
+            name="verification_status",
+        ),
         default="pending",
         nullable=False,
     )
@@ -65,6 +69,142 @@ class Worker(db.Model):
             data["certifications"] = [c.to_dict() for c in self.certifications]
             data["availabilities"] = [a.to_dict() for a in self.availabilities]
         return data
+
+
+class VerificationEvidence(db.Model):
+    """Skill/evidence-based verification artefacts (Phase 5).
+
+    Evidence types: identity, experience, skill, certificate, membership,
+    government_registration, assessment. A formal degree is NOT required.
+    """
+
+    __tablename__ = "verification_evidences"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
+    evidence_type = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    document_reference = db.Column(db.String(512), nullable=True)
+    issuing_authority = db.Column(db.String(255), nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    decision = db.Column(db.String(20), default="pending", nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "worker_id": self.worker_id,
+            "evidence_type": self.evidence_type,
+            "title": self.title,
+            "document_reference": self.document_reference,
+            "issuing_authority": self.issuing_authority,
+            "reviewed_by": self.reviewed_by,
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
+            "decision": self.decision,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class VerificationHistory(db.Model):
+    """Audit trail of every verification status change (Phase 5)."""
+
+    __tablename__ = "verification_history"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
+    from_status = db.Column(db.String(20), nullable=True)
+    to_status = db.Column(db.String(20), nullable=False)
+    changed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "worker_id": self.worker_id,
+            "from_status": self.from_status,
+            "to_status": self.to_status,
+            "changed_by": self.changed_by,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class WorkerComplianceRecord(db.Model):
+    """Compliance requirements with expiry tracking (Phase 6)."""
+
+    __tablename__ = "worker_compliance_records"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
+    requirement_type = db.Column(db.String(50), nullable=False)
+    requirement_name = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(20), default="pending", nullable=False)
+    document_reference = db.Column(db.String(512), nullable=True)
+    issued_date = db.Column(db.Date, nullable=True)
+    expiry_date = db.Column(db.Date, nullable=True)
+    verified_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "worker_id": self.worker_id,
+            "requirement_type": self.requirement_type,
+            "requirement_name": self.requirement_name,
+            "status": self.status,
+            "document_reference": self.document_reference,
+            "issued_date": self.issued_date.isoformat() if self.issued_date else None,
+            "expiry_date": self.expiry_date.isoformat() if self.expiry_date else None,
+            "verified_by": self.verified_by,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class WorkerViolation(db.Model):
+    """Violation reports with review workflow (Phase 6).
+
+    reported -> under_review -> warning / retraining / suspended / cleared
+    -> resolved. Suspended workers never appear in matching.
+    """
+
+    __tablename__ = "worker_violations"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"), nullable=False)
+    booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), nullable=True)
+    reported_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    category = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    severity = db.Column(db.String(20), default="medium", nullable=False)
+    status = db.Column(db.String(20), default="reported", nullable=False)
+    investigation_notes = db.Column(db.Text, nullable=True)
+    resolution = db.Column(db.Text, nullable=True)
+    resolved_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    resolved_at = db.Column(db.DateTime, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "worker_id": self.worker_id,
+            "booking_id": self.booking_id,
+            "reported_by": self.reported_by,
+            "category": self.category,
+            "description": self.description,
+            "severity": self.severity,
+            "status": self.status,
+            "investigation_notes": self.investigation_notes,
+            "resolution": self.resolution,
+            "resolved_by": self.resolved_by,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+        }
 
 
 class WorkerSkill(db.Model):

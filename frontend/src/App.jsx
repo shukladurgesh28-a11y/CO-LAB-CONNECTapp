@@ -43,6 +43,8 @@ const FederationCooperatives = lazy(() => import('./pages/federation/Cooperative
 const FederationDemand = lazy(() => import('./pages/federation/RegionalDemand'));
 const FederationWorkforce = lazy(() => import('./pages/federation/WorkforceOverview'));
 const FederationPerformance = lazy(() => import('./pages/federation/Performance'));
+const UnifiedDashboard = lazy(() => import('./pages/shared/UnifiedDashboard'));
+const Scanner = lazy(() => import('./pages/shared/Scanner'));
 
 function LoadingSpinner() {
   return (
@@ -63,8 +65,9 @@ function ProtectedRoute({ children, allowedRoles }) {
     const redirectMap = {
       customer: '/customer/dashboard',
       worker: '/worker/dashboard',
-      cooperative_admin: '/cooperative/dashboard',
-      federation_admin: '/federation/dashboard',
+      cooperative_admin: '/unified-dashboard',
+      federation_admin: '/unified-dashboard',
+      platform_admin: '/unified-dashboard',
     };
     return <Navigate to={redirectMap[user?.role] || '/'} replace />;
   }
@@ -97,6 +100,7 @@ function CustomerSidebar({ t }) {
       <SidebarLink to="/customer/request" icon="📝" label={t('customer.requestService')} />
       <SidebarLink to="/customer/bookings" icon="📅" label={t('nav.bookings')} />
       <SidebarLink to="/customer/history" icon="📜" label={t('nav.history')} />
+      <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
       <SidebarLink to="/customer/disputes" icon="⚠️" label="Disputes" />
       <SidebarLink to="/customer/profile" icon="👤" label={t('nav.profile')} />
     </nav>
@@ -108,6 +112,7 @@ function WorkerSidebar({ t }) {
     <nav className="flex flex-col gap-1">
       <SidebarLink to="/worker/dashboard" icon="📊" label={t('nav.dashboard')} />
       <SidebarLink to="/worker/jobs" icon="📋" label={t('nav.assignedJobs')} />
+      <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
       <SidebarLink to="/worker/skills" icon="🛠️" label={t('nav.skills')} />
       <SidebarLink to="/worker/availability" icon="📅" label={t('nav.availability')} />
       <SidebarLink to="/worker/earnings" icon="💰" label={t('nav.earnings')} />
@@ -121,7 +126,9 @@ function WorkerSidebar({ t }) {
 function CooperativeSidebar({ t }) {
   return (
     <nav className="flex flex-col gap-1">
+      <SidebarLink to="/unified-dashboard" icon="🏛️" label="Unified Command Center" />
       <SidebarLink to="/cooperative/dashboard" icon="📊" label={t('nav.dashboard')} />
+      <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
       <SidebarLink to="/cooperative/workers" icon="👷" label={t('nav.workers')} />
       <SidebarLink to="/cooperative/requests" icon="📥" label={t('nav.requests')} />
       <SidebarLink to="/cooperative/allocations" icon="🔗" label={t('nav.allocations')} />
@@ -135,11 +142,22 @@ function CooperativeSidebar({ t }) {
 function FederationSidebar({ t }) {
   return (
     <nav className="flex flex-col gap-1">
+      <SidebarLink to="/unified-dashboard" icon="🏛️" label="Unified Command Center" />
       <SidebarLink to="/federation/dashboard" icon="📊" label={t('nav.dashboard')} />
+      <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
       <SidebarLink to="/federation/cooperatives" icon="🏢" label={t('federation.cooperativeManagement')} />
       <SidebarLink to="/federation/demand" icon="📈" label={t('federation.regionalDemand')} />
       <SidebarLink to="/federation/workforce" icon="👷" label={t('nav.workforce')} />
       <SidebarLink to="/federation/performance" icon="📉" label={t('nav.performance')} />
+    </nav>
+  );
+}
+
+function PlatformAdminSidebar() {
+  return (
+    <nav className="flex flex-col gap-1">
+      <SidebarLink to="/unified-dashboard" icon="🏛️" label="Unified Command Center" />
+      <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
     </nav>
   );
 }
@@ -152,6 +170,7 @@ function Layout() {
     worker: <WorkerSidebar t={t} />,
     cooperative_admin: <CooperativeSidebar t={t} />,
     federation_admin: <FederationSidebar t={t} />,
+    platform_admin: <PlatformAdminSidebar />,
   };
 
   return (
@@ -163,7 +182,15 @@ function Layout() {
           </div>
           <span className="font-bold text-gray-900 text-lg">{t('common.appName')}</span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/scanner"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors border border-blue-200/60"
+            title="Open QR Scanner"
+          >
+            <span>📷</span>
+            <span className="hidden sm:inline">QR Scanner</span>
+          </Link>
           <NotificationBell />
           <span className="text-sm text-gray-600">
             {t('common.welcome')}, <span className="font-medium text-gray-900">{user?.name || user?.email}</span>
@@ -225,6 +252,7 @@ export default function App() {
           <Route path="/customer/history" element={<CustomerHistory />} />
           <Route path="/customer/profile" element={<CustomerProfile />} />
           <Route path="/customer/disputes" element={<CustomerDisputes />} />
+          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -243,6 +271,7 @@ export default function App() {
           <Route path="/worker/earnings" element={<WorkerEarnings />} />
           <Route path="/worker/history" element={<WorkerHistory />} />
           <Route path="/worker/disputes" element={<WorkerDisputes />} />
+          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -252,6 +281,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
+          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
           <Route path="/cooperative/dashboard" element={<CooperativeDashboard />} />
           <Route path="/cooperative/workers" element={<CooperativeWorkers />} />
           <Route path="/cooperative/workers/:id" element={<CooperativeWorkerDetail />} />
@@ -261,6 +291,7 @@ export default function App() {
           <Route path="/cooperative/performance" element={<CooperativePerformance />} />
           <Route path="/cooperative/demand" element={<CooperativeDemand />} />
           <Route path="/cooperative/disputes" element={<CooperativeDisputes />} />
+          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -270,11 +301,24 @@ export default function App() {
             </ProtectedRoute>
           }
         >
+          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
           <Route path="/federation/dashboard" element={<FederationDashboard />} />
           <Route path="/federation/cooperatives" element={<FederationCooperatives />} />
           <Route path="/federation/demand" element={<FederationDemand />} />
           <Route path="/federation/workforce" element={<FederationWorkforce />} />
           <Route path="/federation/performance" element={<FederationPerformance />} />
+          <Route path="/scanner" element={<Scanner />} />
+        </Route>
+
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={['platform_admin']}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
+          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

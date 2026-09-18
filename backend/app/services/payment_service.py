@@ -100,7 +100,7 @@ class PaymentService:
             service_amount=booking.total_amount or 0,
             material_charges=booking.material_charges or 0,
             commission_rate=current_app.config.get("COMMISSION_RATE", 0.10),
-            welfare_rate=current_app.config.get("WELFARE_RATE", 0.05),
+            welfare_rate=current_app.config.get("WELFARE_RATE", 0.02),
             tax_rate=current_app.config.get("TAX_RATE", 0.0),
             commission_applies_to_material=current_app.config.get(
                 "COMMISSION_INCLUDE_MATERIAL", False

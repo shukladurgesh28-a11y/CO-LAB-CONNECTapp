@@ -23,7 +23,7 @@ PAISE = Decimal("0.01")
 Money = Union[Decimal, float, int, str]
 
 DEFAULT_COMMISSION_RATE = Decimal("0.10")
-DEFAULT_WELFARE_RATE = Decimal("0.05")
+DEFAULT_WELFARE_RATE = Decimal("0.02")
 DEFAULT_TAX_RATE = Decimal("0.00")
 
 

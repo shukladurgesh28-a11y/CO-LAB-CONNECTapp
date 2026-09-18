@@ -2,7 +2,10 @@ import math
 from datetime import datetime, timezone, date, timedelta
 from sqlalchemy import or_
 from app import db
-from app.models.worker import Worker, WorkerSkill, WorkerAvailability, WorkerCertification
+from app.models.worker import (
+    Worker, WorkerSkill, WorkerAvailability, WorkerCertification,
+    WorkerComplianceRecord, WorkerViolation,
+)
 from app.models.service import Skill
 from app.models.booking import ServiceRequest, Rating, ServiceHistory
 
@@ -24,27 +27,36 @@ class WorkerRecommendation:
 
 
 class MatchingEngine:
+    # Deterministic weighted scoring (Phase 7). Weights sum to 1.0.
+    # "fairness" uses a 30-day rolling window with a neutral 0.75 baseline
+    # and an explicit cold-start grace bonus for workers with < 5 jobs.
     DEFAULT_WEIGHTS = {
         "skill": 0.25,
-        "qualification": 0.20,
+        "qualification": 0.15,
         "location": 0.15,
         "availability": 0.15,
         "experience": 0.10,
         "workload": 0.05,
+        "fairness": 0.05,
         "history": 0.05,
         "rating": 0.05,
     }
 
     EMERGENCY_WEIGHTS = {
         "skill": 0.20,
-        "qualification": 0.15,
+        "qualification": 0.10,
         "location": 0.25,
         "availability": 0.20,
         "experience": 0.08,
         "workload": 0.05,
+        "fairness": 0.05,
         "history": 0.03,
         "rating": 0.04,
     }
+
+    COLD_START_THRESHOLD = 5
+    COLD_START_BASELINE = 0.75
+    COLD_START_GRACE_BONUS = 0.10
 
     def find_recommendations(self, request_id):
         sr = ServiceRequest.query.get(request_id)
@@ -73,28 +85,63 @@ class MatchingEngine:
         for worker in workers:
             if worker.current_workload >= worker.max_workload:
                 continue
+            if not self._is_eligible(worker, reference_date=sr.preferred_date or date.today()):
+                continue
             if not self.is_available_for_request(worker, sr):
                 continue
 
             breakdown = self.get_score_breakdown(worker, sr, weights)
+            # "_cold_start" is an internal flag, not a score contributor.
+            cold_start = bool(breakdown.pop("_cold_start", 0.0))
             total_score = sum(breakdown.values())
 
             if total_score < 0.1:
                 continue
 
-            explanation = self._build_explanation(breakdown, worker, sr)
+            explanation = self._build_explanation(breakdown, worker, sr, cold_start=cold_start)
 
             recommendations.append(
                 WorkerRecommendation(worker, total_score, breakdown, explanation)
             )
 
+        # Deterministic tie-breaking (Phase 7):
+        # 1. highest score, 2. greatest days since last completed service
+        #    (oldest first; never-served workers first), 3. worker ID ascending.
         recommendations.sort(
             key=lambda recommendation: (
                 -recommendation.score,
-                -(self._last_service_date(recommendation.worker) or date.min).toordinal(),
+                self._last_service_ordinal(recommendation.worker),
+                recommendation.worker.id,
             )
         )
         return recommendations
+
+    def _is_eligible(self, worker, reference_date):
+        """Eligibility gate before scoring (Phase 7).
+
+        Suspended workers never appear; expired required credentials remove
+        the worker from matching; active serious violations block matching.
+        """
+        if worker.verification_status != "verified":
+            return False
+        if not worker.is_available:
+            return False
+        expired = WorkerComplianceRecord.query.filter(
+            WorkerComplianceRecord.worker_id == worker.id,
+            WorkerComplianceRecord.status == "expired",
+            WorkerComplianceRecord.expiry_date.isnot(None),
+            WorkerComplianceRecord.expiry_date < reference_date,
+        ).first()
+        if expired:
+            return False
+        blocking_violation = WorkerViolation.query.filter(
+            WorkerViolation.worker_id == worker.id,
+            WorkerViolation.status.in_(["reported", "under_review"]),
+            WorkerViolation.severity.in_(["high", "critical"]),
+        ).first()
+        if blocking_violation:
+            return False
+        return True
 
     def is_available_for_request(self, worker, request):
         if not request.preferred_date:
@@ -192,6 +239,18 @@ class MatchingEngine:
         history_score = 0.75 if recent_history < 5 else min(1.0, recent_history / 20.0)
         breakdown["history"] = history_score * weights["history"]
 
+        # Fairness: 30-day rolling window. Prefer workers with fewer recent
+        # jobs; cold-start workers (< 5 jobs) get the neutral 0.75 baseline
+        # plus an explicit grace bonus so they are not starved.
+        fairness_raw = 1.0 - min(1.0, recent_history / 10.0)
+        if recent_history < self.COLD_START_THRESHOLD:
+            fairness_score = min(1.0, max(fairness_raw, self.COLD_START_BASELINE) + self.COLD_START_GRACE_BONUS)
+            breakdown["_cold_start"] = 1.0
+        else:
+            fairness_score = fairness_raw
+            breakdown["_cold_start"] = 0.0
+        breakdown["fairness"] = fairness_score * weights["fairness"]
+
         recent_ratings = Rating.query.filter(
             Rating.worker_id == worker.id,
             Rating.created_at >= datetime.combine(reference_date - timedelta(days=30), datetime.min.time()),
@@ -221,8 +280,23 @@ class MatchingEngine:
             ServiceHistory.worker_id == worker.id
         ).scalar()
 
-    def _build_explanation(self, breakdown, worker, request):
+    @staticmethod
+    def _last_service_ordinal(worker):
+        """Ordinal of last completed service; -1 when never served (first)."""
+        last = MatchingEngine._last_service_date(worker)
+        if last is None:
+            return -1
+        if isinstance(last, datetime):
+            last = last.date()
+        return last.toordinal()
+
+    def _build_explanation(self, breakdown, worker, request, cold_start=False):
         explanations = []
+
+        if cold_start:
+            explanations.append(
+                "Cold-start fairness boost applied (fewer than 5 completed jobs in the last 30 days)."
+            )
 
         if breakdown["skill"] > 0.15:
             explanations.append("Strong skill match for the required service")
@@ -279,8 +353,9 @@ class MatchingEngine:
         weights = self.EMERGENCY_WEIGHTS if is_emergency else self.DEFAULT_WEIGHTS
 
         breakdown = self.get_score_breakdown(worker, sr, weights)
+        cold_start = bool(breakdown.pop("_cold_start", 0.0))
         total_score = sum(breakdown.values())
-        explanation = self._build_explanation(breakdown, worker, sr)
+        explanation = self._build_explanation(breakdown, worker, sr, cold_start=cold_start)
 
         reasons_not_recommended = []
         if worker.verification_status != "verified":
