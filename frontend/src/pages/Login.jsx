@@ -31,6 +31,7 @@ export default function Login() {
     if (normalizedRole === 'worker') navigate('/worker/dashboard');
     else if (normalizedRole === 'cooperative_admin') navigate('/cooperative/dashboard');
     else if (normalizedRole === 'federation_admin') navigate('/federation/dashboard');
+    else if (normalizedRole === 'platform_admin') navigate('/admin');
     else navigate('/customer/dashboard');
   };
 

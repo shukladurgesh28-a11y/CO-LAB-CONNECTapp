@@ -10,6 +10,7 @@ from app.models.dispute import Dispute
 from app.models.user import User
 from app.models.worker import Worker
 from app.services.notification_service import NotificationService
+from app.utils.authorization import audit
 from app.utils.helpers import error_response, success_response
 
 
@@ -166,6 +167,9 @@ def update_dispute(dispute_id):
     elif new_status == "cancelled":
         dispute.status = new_status
     dispute.updated_at = datetime.now(timezone.utc)
+    if is_admin:
+        audit(user, f"dispute.{new_status}", "dispute", dispute.id,
+              (data.get("resolution") or "")[:200])
     db.session.commit()
     if dispute.raised_by != user.id:
         NotificationService().send_notification(

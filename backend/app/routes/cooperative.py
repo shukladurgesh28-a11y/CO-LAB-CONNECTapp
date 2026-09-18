@@ -12,6 +12,7 @@ from app.models.dispute import Dispute
 from app.models.welfare import WorkerWelfare
 from app.services.notification_service import NotificationService
 from app.utils.helpers import success_response, error_response
+from app.utils.authorization import audit
 
 cooperative_bp = Blueprint("cooperative", __name__, url_prefix="/api/cooperative")
 allocations_bp = Blueprint("allocations", __name__, url_prefix="/api")
@@ -98,12 +99,17 @@ def verify_worker(worker_id):
     try:
         user_id = int(get_jwt_identity())
         user, coop = get_user_cooperative(user_id)
-        if not coop:
+        if not coop and (not user or user.role != "platform_admin"):
             return error_response("No cooperative found", 404)
 
         worker = Worker.query.get(worker_id)
         if not worker:
             return error_response("Worker not found", 404)
+
+        if user.role == "platform_admin":
+            coop = worker.cooperative
+        if not coop:
+            return error_response("No cooperative found", 404)
 
         if worker.cooperative_id != coop.id:
             return error_response("Worker does not belong to this cooperative", 403)
@@ -137,6 +143,8 @@ def verify_worker(worker_id):
             changed_by=user_id,
             notes=worker.verification_notes,
         ))
+        audit(user, f"worker.{action}", "worker", worker.id,
+              f"{previous} -> {new_status}")
 
         db.session.commit()
         return success_response(worker.to_dict(), f"Worker {action}d")
@@ -155,14 +163,16 @@ def verify_certification(cert_id):
         from app.models.worker import WorkerCertification
         user_id = int(get_jwt_identity())
         user, coop = get_user_cooperative(user_id)
-        if not coop:
+        if not coop and (not user or user.role != "platform_admin"):
             return error_response("No cooperative found", 404)
 
         cert = WorkerCertification.query.get(cert_id)
         if not cert:
             return error_response("Certification not found", 404)
         worker = Worker.query.get(cert.worker_id)
-        if not worker or worker.cooperative_id != coop.id:
+        if user and user.role == "platform_admin":
+            coop = worker.cooperative if worker else None
+        if not worker or not coop or worker.cooperative_id != coop.id:
             return error_response("Certification does not belong to this cooperative", 403)
 
         data = request.get_json() or {}
@@ -171,6 +181,8 @@ def verify_certification(cert_id):
         cert.verified_by = user_id
         if data.get("notes"):
             cert.notes = data["notes"]
+        audit(user, "certification.verify" if verified else "certification.reject",
+              "certification", cert.id, f"worker={cert.worker_id}")
         db.session.commit()
         return success_response(cert.to_dict(), "Certification %s" % ("verified" if verified else "rejected"))
     except Exception as e:
@@ -309,6 +321,8 @@ def create_allocation():
                 booking.total_amount = sr.service.base_price if sr.service else 500.0
                 booking.final_amount = booking.total_amount
 
+        audit(user, "allocation.create", "allocation", allocation.id,
+              f"request={request_id} worker={worker_id}")
         db.session.commit()
         NotificationService().send_allocation_update(allocation, "accepted")
         NotificationService().send_booking_update(booking, "confirmed")
@@ -328,12 +342,23 @@ def list_allocations():
     try:
         user_id = int(get_jwt_identity())
         user, coop = get_user_cooperative(user_id)
-        if not coop:
+        if user and user.role == "platform_admin":
+            allocations = Allocation.query.order_by(
+                Allocation.created_at.desc()
+            ).all()
+        elif user and user.role == "federation_admin":
+            fed_ids = [f.id for f in user.administered_federations]
+            coop_ids = [c.id for c in Cooperative.query.filter(
+                Cooperative.federation_id.in_(fed_ids)).all()]
+            allocations = Allocation.query.filter(
+                Allocation.cooperative_id.in_(coop_ids)).order_by(
+                Allocation.created_at.desc()).all()
+        elif not coop:
             return error_response("No cooperative found", 404)
-
-        allocations = Allocation.query.filter_by(cooperative_id=coop.id).order_by(
-            Allocation.created_at.desc()
-        ).all()
+        else:
+            allocations = Allocation.query.filter_by(cooperative_id=coop.id).order_by(
+                Allocation.created_at.desc()
+            ).all()
         return success_response(
             [a.to_dict() for a in allocations],
             "Allocations retrieved",

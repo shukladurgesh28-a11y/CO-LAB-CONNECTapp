@@ -166,6 +166,10 @@ def create_app(config_name=None):
         disputes_bp,
         welfare_bp,
         exports_bp,
+        admin_bp,
+        society_workforce_bp,
+        federation_workforce_bp,
+        worker_workforce_bp,
     )
     from app.services.matching_routes import matching_bp
 
@@ -186,11 +190,15 @@ def create_app(config_name=None):
     app.register_blueprint(disputes_bp)
     app.register_blueprint(welfare_bp)
     app.register_blueprint(exports_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(society_workforce_bp)
+    app.register_blueprint(federation_workforce_bp)
+    app.register_blueprint(worker_workforce_bp)
     app.register_blueprint(matching_bp)
 
     with app.app_context():
         from app.models import user, worker, cooperative, service, booking
-        from app.models import notification, welfare, demand, material, dispute
+        from app.models import notification, welfare, demand, material, dispute, workforce
         db.create_all()
         _ensure_bookings_worker_id_nullable(app)
 

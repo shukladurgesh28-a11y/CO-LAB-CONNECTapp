@@ -59,6 +59,8 @@ export default function AssignedJobs() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
+  const [assignments, setAssignments] = useState([]);
+  const [respondingId, setRespondingId] = useState(null);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -73,9 +75,32 @@ export default function AssignedJobs() {
     }
   }, []);
 
+  const fetchAssignments = useCallback(async () => {
+    try {
+      const res = await api.get('/api/workforce/my-assignments');
+      setAssignments(res.data?.data || []);
+    } catch {
+      /* workforce feature may be empty; bookings remain authoritative */
+    }
+  }, []);
+
   useEffect(() => {
     fetchBookings();
-  }, [fetchBookings]);
+    fetchAssignments();
+  }, [fetchBookings, fetchAssignments]);
+
+  const respondAssignment = async (allocId, decision) => {
+    setRespondingId(allocId);
+    try {
+      await api.post(`/api/workforce/allocations/${allocId}/${decision}`);
+      setAssignments((prev) => prev.map((a) => (a.id === allocId ? { ...a, status: decision === 'accept' ? 'accepted' : 'declined' } : a)));
+      toast.success(decision === 'accept' ? 'Assignment accepted' : 'Assignment declined');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to respond');
+    } finally {
+      setRespondingId(null);
+    }
+  };
 
   useRealtimeSync({
     tables: ['bookings', 'allocations', 'notifications'],
@@ -298,6 +323,36 @@ export default function AssignedJobs() {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Society workforce assignments */}
+      {assignments.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Society Workforce Assignments</h2>
+          <div className="grid gap-3">
+            {assignments.map((a) => (
+              <div key={a.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-gray-900">{a.service_name || 'Work assignment'}</div>
+                  <div className="text-xs text-gray-500">
+                    Requirement #{a.requirement_id} • {a.start_date || ''}{a.end_date ? ` → ${a.end_date}` : ''}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 capitalize">{a.status}</span>
+                  {a.status === 'offered' && (
+                    <>
+                      <button onClick={() => respondAssignment(a.id, 'accept')} disabled={respondingId === a.id}
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">Accept</button>
+                      <button onClick={() => respondAssignment(a.id, 'decline')} disabled={respondingId === a.id}
+                        className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium disabled:opacity-50">Decline</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

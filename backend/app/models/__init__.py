@@ -11,10 +11,11 @@ from app.models.booking import (
     Invoice, Rating, ServiceHistory, MatchingRecommendation,
     AllocationOffer, Settlement,
 )
-from app.models.notification import Notification
+from app.models.notification import Notification, AuditLog
 from app.models.welfare import WorkerWelfare
 from app.models.demand import DemandRecord
 from app.models.material import MaterialRequirement
+from app.models.workforce import WorkforceRequirement, WorkforceItem, WorkforceAllocation
 
 __all__ = [
     "User", "OtpChallenge",
@@ -26,8 +27,9 @@ __all__ = [
     "ServiceRequest", "Allocation", "Booking", "Payment",
     "Invoice", "Rating", "ServiceHistory", "MatchingRecommendation",
     "AllocationOffer", "Settlement",
-    "Notification",
+    "Notification", "AuditLog",
     "WorkerWelfare",
     "DemandRecord",
     "MaterialRequirement",
+    "WorkforceRequirement", "WorkforceItem", "WorkforceAllocation",
 ]

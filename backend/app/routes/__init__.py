@@ -13,6 +13,10 @@ from app.routes.users import users_bp
 from app.routes.disputes import disputes_bp
 from app.routes.welfare import welfare_bp
 from app.routes.exports import exports_bp
+from app.routes.admin import admin_bp
+from app.routes.workforce import (
+    society_workforce_bp, federation_workforce_bp, worker_workforce_bp,
+)
 
 __all__ = [
     "services_bp",
@@ -31,4 +35,8 @@ __all__ = [
     "disputes_bp",
     "welfare_bp",
     "exports_bp",
+    "admin_bp",
+    "society_workforce_bp",
+    "federation_workforce_bp",
+    "worker_workforce_bp",
 ]

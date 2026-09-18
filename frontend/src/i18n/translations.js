@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     common: {
-      appName: "CollabConnect",
+      appName: "Co-LabConnect",
       login: "Login",
       register: "Register",
       logout: "Logout",

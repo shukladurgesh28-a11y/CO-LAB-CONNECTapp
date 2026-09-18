@@ -93,3 +93,20 @@ def can_access_request(user, service_request):
     if user.role == COOP_ADMIN and service_request.cooperative_id in coop_ids_for(user):
         return True
     return False
+
+
+def audit(actor, action, entity_type=None, entity_id=None, details=None):
+    """Append one audit-trail row (Admin module 12). Never raises."""
+    try:
+        from app.models.notification import AuditLog
+        from app import db
+        db.session.add(AuditLog(
+            actor_id=getattr(actor, "id", None),
+            actor_role=getattr(actor, "role", None),
+            action=action,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            details=details,
+        ))
+    except Exception:
+        pass

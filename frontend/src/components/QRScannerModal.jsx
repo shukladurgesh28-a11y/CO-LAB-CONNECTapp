@@ -23,11 +23,15 @@ export default function QRScannerModal({ isOpen, onClose, onVerified, initialCod
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const scanLoopRef = useRef(null);
+  const scannedRef = useRef(false);
+  const [liveDecode, setLiveDecode] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setResult(null);
       setCameraError(null);
+      scannedRef.current = false;
       startCamera();
       if (initialCode) {
         handleVerify(initialCode);
@@ -48,6 +52,7 @@ export default function QRScannerModal({ isOpen, onClose, onVerified, initialCod
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           setCameraActive(true);
+          beginLiveDecode();
         }
       } else {
         setCameraError('Webcam access not supported in this browser environment.');
@@ -59,7 +64,42 @@ export default function QRScannerModal({ isOpen, onClose, onVerified, initialCod
     }
   };
 
+  // Live QR decoding via the native BarcodeDetector (Chrome/Edge).
+  // No extra dependency; unsupported browsers fall back to manual entry.
+  const beginLiveDecode = () => {
+    if (!('BarcodeDetector' in window)) return;
+    let detector;
+    try {
+      detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+    } catch {
+      return;
+    }
+    setLiveDecode(true);
+    scanLoopRef.current = setInterval(async () => {
+      const video = videoRef.current;
+      if (!video || video.readyState < 2 || scannedRef.current) return;
+      try {
+        const codes = await detector.detect(video);
+        if (codes && codes.length > 0 && codes[0].rawValue) {
+          scannedRef.current = true;
+          clearInterval(scanLoopRef.current);
+          scanLoopRef.current = null;
+          const value = String(codes[0].rawValue).trim();
+          setCode(value);
+          handleVerify(value);
+        }
+      } catch {
+        /* transient frame errors are ignored */
+      }
+    }, 600);
+  };
+
   const stopCamera = () => {
+    if (scanLoopRef.current) {
+      clearInterval(scanLoopRef.current);
+      scanLoopRef.current = null;
+    }
+    setLiveDecode(false);
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -157,7 +197,7 @@ export default function QRScannerModal({ isOpen, onClose, onVerified, initialCod
             <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[11px] text-white/70 bg-black/40 backdrop-blur-md px-3 py-1 rounded-md">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                Live Verification Engine
+                {liveDecode ? 'Live QR decode: point at a code' : 'Live Verification Engine'}
               </span>
               <span className="font-mono text-blue-300">256-Bit Signed</span>
             </div>

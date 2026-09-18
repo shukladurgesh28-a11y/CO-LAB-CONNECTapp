@@ -44,6 +44,10 @@ const FederationDemand = lazy(() => import('./pages/federation/RegionalDemand'))
 const FederationWorkforce = lazy(() => import('./pages/federation/WorkforceOverview'));
 const FederationPerformance = lazy(() => import('./pages/federation/Performance'));
 const UnifiedDashboard = lazy(() => import('./pages/shared/UnifiedDashboard'));
+const AdminPanel = lazy(() => import('./pages/admin/AdminPanel'));
+const SocietyWorkforce = lazy(() => import('./pages/cooperative/Workforce'));
+const WorkforceDetail = lazy(() => import('./pages/cooperative/WorkforceDetail'));
+const FederationHiring = lazy(() => import('./pages/federation/Workforce'));
 const Scanner = lazy(() => import('./pages/shared/Scanner'));
 
 function LoadingSpinner() {
@@ -67,7 +71,7 @@ function ProtectedRoute({ children, allowedRoles }) {
       worker: '/worker/dashboard',
       cooperative_admin: '/unified-dashboard',
       federation_admin: '/unified-dashboard',
-      platform_admin: '/unified-dashboard',
+      platform_admin: '/admin',
     };
     return <Navigate to={redirectMap[user?.role] || '/'} replace />;
   }
@@ -131,6 +135,7 @@ function CooperativeSidebar({ t }) {
       <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
       <SidebarLink to="/cooperative/workers" icon="👷" label={t('nav.workers')} />
       <SidebarLink to="/cooperative/requests" icon="📥" label={t('nav.requests')} />
+      <SidebarLink to="/cooperative/workforce" icon="👥" label="Workforce" />
       <SidebarLink to="/cooperative/allocations" icon="🔗" label={t('nav.allocations')} />
       <SidebarLink to="/cooperative/performance" icon="📈" label={t('nav.performance')} />
       <SidebarLink to="/cooperative/demand" icon="📉" label={t('nav.demand')} />
@@ -148,6 +153,7 @@ function FederationSidebar({ t }) {
       <SidebarLink to="/federation/cooperatives" icon="🏢" label={t('federation.cooperativeManagement')} />
       <SidebarLink to="/federation/demand" icon="📈" label={t('federation.regionalDemand')} />
       <SidebarLink to="/federation/workforce" icon="👷" label={t('nav.workforce')} />
+      <SidebarLink to="/federation/hiring" icon="👥" label="Workforce Needs" />
       <SidebarLink to="/federation/performance" icon="📉" label={t('nav.performance')} />
     </nav>
   );
@@ -156,7 +162,7 @@ function FederationSidebar({ t }) {
 function PlatformAdminSidebar() {
   return (
     <nav className="flex flex-col gap-1">
-      <SidebarLink to="/unified-dashboard" icon="🏛️" label="Unified Command Center" />
+      <SidebarLink to="/admin" icon="🛡️" label="Admin Panel" />
       <SidebarLink to="/scanner" icon="📷" label="QR Scanner" />
     </nav>
   );
@@ -252,7 +258,6 @@ export default function App() {
           <Route path="/customer/history" element={<CustomerHistory />} />
           <Route path="/customer/profile" element={<CustomerProfile />} />
           <Route path="/customer/disputes" element={<CustomerDisputes />} />
-          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -271,7 +276,6 @@ export default function App() {
           <Route path="/worker/earnings" element={<WorkerEarnings />} />
           <Route path="/worker/history" element={<WorkerHistory />} />
           <Route path="/worker/disputes" element={<WorkerDisputes />} />
-          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -281,17 +285,16 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
           <Route path="/cooperative/dashboard" element={<CooperativeDashboard />} />
           <Route path="/cooperative/workers" element={<CooperativeWorkers />} />
           <Route path="/cooperative/workers/:id" element={<CooperativeWorkerDetail />} />
           <Route path="/cooperative/requests" element={<CooperativeRequests />} />
           <Route path="/cooperative/requests/:id" element={<CooperativeRequestDetail />} />
+          <Route path="/cooperative/workforce" element={<SocietyWorkforce />} />
           <Route path="/cooperative/allocations" element={<CooperativeAllocations />} />
           <Route path="/cooperative/performance" element={<CooperativePerformance />} />
           <Route path="/cooperative/demand" element={<CooperativeDemand />} />
           <Route path="/cooperative/disputes" element={<CooperativeDisputes />} />
-          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -301,13 +304,12 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
           <Route path="/federation/dashboard" element={<FederationDashboard />} />
           <Route path="/federation/cooperatives" element={<FederationCooperatives />} />
           <Route path="/federation/demand" element={<FederationDemand />} />
           <Route path="/federation/workforce" element={<FederationWorkforce />} />
+          <Route path="/federation/hiring" element={<FederationHiring />} />
           <Route path="/federation/performance" element={<FederationPerformance />} />
-          <Route path="/scanner" element={<Scanner />} />
         </Route>
 
         <Route
@@ -317,8 +319,37 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
+          <Route path="/admin" element={<AdminPanel />} />
+        </Route>
+
+        {/* Shared cross-role pages: declared once so first-match routing
+            never bounces an authorized role to another dashboard. */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={['customer', 'worker', 'cooperative_admin', 'federation_admin', 'platform_admin']}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/scanner" element={<Scanner />} />
+        </Route>
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={['cooperative_admin', 'federation_admin']}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/unified-dashboard" element={<UnifiedDashboard />} />
+        </Route>
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={['cooperative_admin', 'federation_admin', 'platform_admin']}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/workforce/:id" element={<WorkforceDetail />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
