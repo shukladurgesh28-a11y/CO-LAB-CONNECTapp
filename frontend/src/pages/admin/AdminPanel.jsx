@@ -4,9 +4,10 @@ import { ShieldCheck, Loader2, Scan } from 'lucide-react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import QRScannerModal from '../../components/QRScannerModal';
+import AIAssistant from '../../components/AIAssistant';
 
 const TABS = [
-  'Overview', 'Requests', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
+  'Overview', 'Requests', 'AI Assistant', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
   'Payments', 'Welfare', 'Disputes', 'Services', 'Analytics', 'Notifications', 'Audit',
 ];
 
@@ -288,6 +289,12 @@ export default function AdminPanel() {
           {requests.length === 0 && !tabErrors.Requests && (
             <p className="text-sm text-gray-400 py-4 text-center">No service requests yet.</p>
           )}
+        </Section>
+      )}
+
+      {tab === 'AI Assistant' && (
+        <Section title="AI assistant — analytics & upgrades (advisory)">
+          <AIAssistant />
         </Section>
       )}
 

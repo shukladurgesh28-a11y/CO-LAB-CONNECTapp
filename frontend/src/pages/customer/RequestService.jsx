@@ -4,6 +4,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import LocationPicker from '../../components/LocationPicker';
+import VoiceBooking from '../../components/VoiceBooking';
 import {
   ArrowLeft,
   MapPin,
@@ -184,6 +185,22 @@ export default function RequestService() {
           <Sparkles size={16} />
           Fill demo details
         </button>
+      </div>
+
+      <div className="mb-6">
+        <VoiceBooking
+          services={services}
+          onFill={(parsed) => {
+            setForm((prev) => {
+              const next = { ...prev, ...parsed };
+              const svc = services.find((s) => String(s.id) === String(parsed.service_id));
+              if (svc?.category) next.category = svc.category;
+              if (parsed.amount == null && svc?.base_price) next.amount = String(svc.base_price);
+              return next;
+            });
+            toast.success('Voice details filled — please review and confirm!');
+          }}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
