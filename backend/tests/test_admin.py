@@ -97,6 +97,22 @@ class AdminTestCase(unittest.TestCase):
         self.assertEqual(detail.get_json()["data"]["worker_id"], worker_id)
         self.assertEqual(detail.get_json()["data"]["status"], "confirmed")
 
+    def test_ai_assist_requires_key_and_platform_role(self):
+        admin = self.login("admin@demo.com")
+        # No key in testing env -> 503 with graceful message, never a crash.
+        res = self.call("POST", "/api/admin/ai-assist", {"question": "Where is demand highest?"}, admin)
+        self.assertEqual(res.status_code, 503, res.get_json())
+        status = self.call("GET", "/api/admin/ai-assist", token=admin)
+        self.assertEqual(status.status_code, 200)
+        self.assertFalse(status.get_json()["data"]["configured"])
+        # Non-platform roles are refused.
+        coop = self.login("coop@demo.com")
+        denied = self.call("POST", "/api/admin/ai-assist", {"question": "Hi"}, coop)
+        self.assertEqual(denied.status_code, 403)
+        # Empty question rejected.
+        empty = self.call("POST", "/api/admin/ai-assist", {"question": "  "}, admin)
+        self.assertEqual(empty.status_code, 400)
+
     def test_service_category_create_and_users_stats(self):
         admin = self.login("admin@demo.com")
         created = self.call("POST", "/api/admin/services/categories", {

@@ -81,6 +81,13 @@ class Config:
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     NEON_API_KEY = os.getenv("NEON_API_KEY", "")
 
+    # OpenCode Zen model for the platform AI assistant (backend-only secret).
+    OPENCODE_ZEN_API_KEY = os.getenv("OPENCODE_ZEN_API_KEY", "")
+    OPENCODE_ZEN_MODEL = os.getenv("OPENCODE_ZEN_MODEL", "big-pickle")
+    OPENCODE_ZEN_URL = os.getenv(
+        "OPENCODE_ZEN_URL", "https://opencode.ai/zen/v1/chat/completions"
+    )
+
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
 

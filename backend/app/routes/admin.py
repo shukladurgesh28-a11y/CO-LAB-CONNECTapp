@@ -24,6 +24,7 @@ from app.models.notification import Notification, AuditLog
 from app.models.workforce import WorkforceRequirement
 from app.utils.authorization import audit
 from app.utils.helpers import success_response, error_response, money_float
+from app.services.opencode_assistant import ask_opencode, opencode_configured
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -446,6 +447,88 @@ def broadcast():
     except Exception as e:
         db.session.rollback()
         return error_response(f"Failed to broadcast: {str(e)}", 500)
+
+
+# ------------------------------------------------------------ AI assistant (opencode)
+@admin_bp.route("/ai-assist", methods=["GET"])
+@jwt_required()
+def ai_assist_status():
+    user, err = _require_platform()
+    if err:
+        return err
+    return success_response(
+        {"configured": opencode_configured()},
+        "Assistant backend status",
+    )
+
+
+@admin_bp.route("/ai-assist", methods=["POST"])
+@jwt_required()
+def ai_assist():
+    """Ask the opencode model about live platform data (platform admin only).
+
+    The server injects a fresh data snapshot into the prompt; the model only
+    advises. Without OPENCODE_ZEN_API_KEY configured, returns 503 and the
+    frontend falls back to its built-in rule-based assistant.
+    """
+    user, err = _require_platform()
+    if err:
+        return err
+    try:
+        data = request.get_json() or {}
+        question = (data.get("question") or "").strip()
+        if not question:
+            return error_response("Question is required", 400)
+        if not opencode_configured():
+            return error_response(
+                "AI model is not configured. Set OPENCODE_ZEN_API_KEY on the backend.",
+                503,
+            )
+        snapshot = _assistant_snapshot()
+        reply = ask_opencode(question, snapshot)
+        audit(user, "ai.assist", "assistant", None, question[:200])
+        db.session.commit()
+        return success_response({"reply": reply, "model": True}, "Assistant replied")
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"Assistant failed: {str(e)}", 502)
+
+
+def _assistant_snapshot():
+    inv = db.session.query(
+        func.coalesce(func.sum(Invoice.net_amount), 0),
+        func.coalesce(func.sum(Invoice.commission_amount), 0),
+        func.coalesce(func.sum(Invoice.welfare_amount), 0),
+        func.coalesce(func.sum(Invoice.worker_payout), 0),
+    ).first()
+    heat = (
+        ServiceRequest.query.filter_by(status="pending")
+        .order_by(ServiceRequest.created_at.desc()).limit(50).all()
+    )
+    areas = {}
+    for r in heat:
+        key = (r.location_address or "Unknown area").split(",")[0].strip()
+        areas[key] = areas.get(key, 0) + 1
+    top_areas = sorted(areas.items(), key=lambda kv: kv[1], reverse=True)[:5]
+    wf = WorkforceRequirement.query.all()
+    return {
+        "federations": Federation.query.count(),
+        "societies": Cooperative.query.count(),
+        "workers_total": Worker.query.count(),
+        "workers_verified": Worker.query.filter_by(verification_status="verified").count(),
+        "customers": User.query.filter_by(role="customer").count(),
+        "active_jobs": Booking.query.filter(Booking.status.in_(
+            ["confirmed", "accepted", "en_route", "service_started", "in_progress"])).count(),
+        "completed_jobs": Booking.query.filter_by(status="completed").count(),
+        "revenue": float(inv[0] or 0),
+        "commission": float(inv[1] or 0),
+        "welfare": float(inv[2] or 0),
+        "payouts": float(inv[3] or 0),
+        "open_disputes": Dispute.query.filter(
+            Dispute.status.in_(["open", "under_review", "awaiting_response"])).count(),
+        "top_demand_areas": [{"area": a, "open_requests": n} for a, n in top_areas],
+        "workforce_open_slots": sum((r.workers_remaining or 0) for r in wf),
+    }
 
 
 # ------------------------------------------------------------ audit

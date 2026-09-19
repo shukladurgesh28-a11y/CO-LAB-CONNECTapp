@@ -95,10 +95,25 @@ export default function AIAssistant() {
     return out;
   }, [overview, heatmap, workforce, disputes]);
 
-  const ask = (e) => {
+  const [modelBadge, setModelBadge] = useState(null);
+
+  const ask = async (e) => {
     e?.preventDefault();
     const q = question.toLowerCase();
     if (!q.trim() || !overview) return;
+    // Prefer the opencode model backend; fall back to built-in rules.
+    try {
+      const res = await api.post('/api/admin/ai-assist', { question: question.trim() });
+      const reply = res.data?.data?.reply || res.data?.reply;
+      if (reply) {
+        setAnswer({ q: question.trim(), reply });
+        setModelBadge('Answered by opencode model');
+        return;
+      }
+    } catch {
+      /* model not configured or unreachable — use built-in rules below */
+    }
+    setModelBadge('Answered from live data (built-in rules)');
     let reply;
     if (/revenue|money|earning|commission|payout|welfare/.test(q)) {
       reply = `Revenue ₹${Number(overview.revenue_total).toLocaleString('en-IN')} — commission ₹${Number(overview.commission_total).toLocaleString('en-IN')}, welfare ₹${Number(overview.welfare_fund).toLocaleString('en-IN')}, payouts ₹${Number(overview.payouts_total).toLocaleString('en-IN')}. Every figure reconciles from backend invoices.`;
@@ -161,6 +176,7 @@ export default function AIAssistant() {
           <div className="mt-3 text-sm bg-gray-50 rounded-lg p-3">
             <p className="font-semibold text-gray-900">Q: {answer.q}</p>
             <p className="text-gray-700 mt-1">{answer.reply}</p>
+            {modelBadge && <p className="text-[11px] text-purple-600 mt-1.5">{modelBadge}</p>}
           </div>
         )}
         <p className="text-[11px] text-gray-400 mt-2">Advisory only — every number comes from live platform data; decisions stay with your admins.</p>
