@@ -6,9 +6,22 @@ import toast from 'react-hot-toast';
 import QRScannerModal from '../../components/QRScannerModal';
 
 const TABS = [
-  'Overview', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
+  'Overview', 'Requests', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
   'Payments', 'Welfare', 'Disputes', 'Services', 'Analytics', 'Notifications', 'Audit',
 ];
+
+const TabError = ({ message, onRetry }) => (
+  <div className="bg-white rounded-2xl p-8 border border-red-100 shadow-sm text-center">
+    <p className="text-sm text-red-700 font-medium">{message || 'Could not load this section.'}</p>
+    <p className="text-xs text-gray-500 mt-1">Check that the backend is running, then retry.</p>
+    {onRetry && (
+      <button onClick={onRetry}
+        className="mt-3 px-4 py-2 bg-purple-700 text-white rounded-lg text-sm font-semibold">
+        Retry
+      </button>
+    )}
+  </div>
+);
 
 const badge = (s) => (
   <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">
@@ -62,7 +75,9 @@ export default function AdminPanel() {
   const [heatmap, setHeatmap] = useState([]);
   const [notifs, setNotifs] = useState([]);
   const [audit, setAudit] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [loaded, setLoaded] = useState({});
+  const [tabErrors, setTabErrors] = useState({});
   const [scannerOpen, setScannerOpen] = useState(false);
   const [busy, setBusy] = useState(null);
   const [broadcast, setBroadcast] = useState({ title: '', message: '', role: '' });
@@ -74,10 +89,11 @@ export default function AdminPanel() {
     return res.data?.data ?? res.data;
   }, []);
 
-  const loadTab = useCallback(async (name) => {
-    if (loaded[name]) return;
+  const loadTab = useCallback(async (name, force) => {
+    if (loaded[name] && !force) return;
     try {
       if (name === 'Overview') setOverview(await get('/api/admin/overview'));
+      if (name === 'Requests') setRequests(await get('/api/requests', { status: 'all' }));
       if (name === 'Federations') setFeds(await get('/api/admin/federations'));
       if (name === 'Societies') setCoops(await get('/api/admin/societies'));
       if (name === 'Workers') setWorkers(await get('/api/workers/'));
@@ -94,8 +110,11 @@ export default function AdminPanel() {
       if (name === 'Notifications') setNotifs(await get('/api/notifications'));
       if (name === 'Audit') setAudit(await get('/api/admin/audit-logs'));
       setLoaded((p) => ({ ...p, [name]: true }));
+      setTabErrors((p) => ({ ...p, [name]: null }));
     } catch (err) {
-      toast.error(err.userMessage || `Failed to load ${name}`);
+      const msg = err.userMessage || `Failed to load ${name}`;
+      setTabErrors((p) => ({ ...p, [name]: msg }));
+      toast.error(msg);
     }
   }, [get, loaded]);
 
@@ -115,7 +134,7 @@ export default function AdminPanel() {
       await fn();
       toast.success(okMsg);
       setLoaded((p) => ({ ...p, [tab]: false }));
-      await loadTab(tab);
+      await loadTab(tab, true);
       setLoaded((p) => ({ ...p, Audit: false }));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Action failed');
@@ -186,6 +205,14 @@ export default function AdminPanel() {
         ))}
       </div>
 
+      {tabErrors[tab] && (
+        <TabError message={tabErrors[tab]} onRetry={() => loadTab(tab, true)} />
+      )}
+
+      {tab === 'Overview' && !overview && !loading && !tabErrors.Overview && (
+        <TabError message="Overview is empty." onRetry={() => loadTab('Overview', true)} />
+      )}
+
       {tab === 'Overview' && overview && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card label="Federations" value={overview.federations_total} sub={`${overview.federations_active} active`} />
@@ -199,6 +226,27 @@ export default function AdminPanel() {
           <Card label="Payouts" value={`₹${Number(overview.payouts_total).toLocaleString('en-IN')}`} />
           <Card label="Welfare fund" value={`₹${Number(overview.welfare_fund).toLocaleString('en-IN')}`} sub={`${overview.open_disputes} open disputes`} />
         </div>
+      )}
+
+      {tab === 'Requests' && (
+        <Section title="Service requests (all societies)">
+          <Table head={['ID', 'Service', 'Customer', 'Society', 'Status', 'Worker', 'Booking']}>
+            {requests.map((r) => (
+              <tr key={r.id}>
+                <td className="py-2.5 px-3 font-mono">#{r.id}</td>
+                <td className="py-2.5 px-3 font-semibold text-gray-900">{r.service_name || `#${r.service_id}`}</td>
+                <td className="py-2.5 px-3">{r.customer_name || `#${r.customer_id}`}</td>
+                <td className="py-2.5 px-3">{r.cooperative_name || `#${r.cooperative_id}`}</td>
+                <td className="py-2.5 px-3">{badge(r.status)}</td>
+                <td className="py-2.5 px-3">{r.allocated_worker?.name || (r.allocated_worker_id ? `#${r.allocated_worker_id}` : 'Unassigned')}</td>
+                <td className="py-2.5 px-3">{r.booking_id ? <Link to={`/customer/bookings/${r.booking_id}`} className="text-purple-700 font-semibold">#{r.booking_id}</Link> : '—'}</td>
+              </tr>
+            ))}
+          </Table>
+          {requests.length === 0 && !tabErrors.Requests && (
+            <p className="text-sm text-gray-400 py-4 text-center">No service requests yet.</p>
+          )}
+        </Section>
       )}
 
       {tab === 'Federations' && (
