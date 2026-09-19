@@ -4,7 +4,7 @@ import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { getCatalog } from '@/services/customer';
-import { getMyAssignments } from '@/services/worker';
+import { completeWorkforceAllocation, getMyAssignments, respondWorkforceAllocation } from '@/services/worker';
 import { Badge, Card, EmptyView, ErrorView, Field, LoadingView, Title } from '@/components/ui-kit';
 import { inr } from '@/utils/format';
 
@@ -12,8 +12,23 @@ import { inr } from '@/utils/format';
 export default function ServicesTab() {
   const { isWorker } = useAuth();
   const [query, setQuery] = useState('');
+  const [actingId, setActingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const catalog = useApi(getCatalog, []);
   const assignments = useApi(getMyAssignments, [isWorker]);
+
+  const act = async (id: number, fn: () => Promise<unknown>, ok: string) => {
+    setActionError(null);
+    setActingId(id);
+    try {
+      await fn();
+      await assignments.retry();
+    } catch (e: any) {
+      setActionError(e?.message || ok);
+    } finally {
+      setActingId(null);
+    }
+  };
 
   if (isWorker) {
     const list = (assignments.data || []) as any[];
@@ -31,6 +46,28 @@ export default function ServicesTab() {
             <Text style={styles.name}>{item.service_name || 'Work assignment'}</Text>
             <Text style={styles.sub}>Requirement #{item.requirement_id}</Text>
             <Badge status={item.status} />
+            {item.status === 'offered' && (
+              <View style={styles.actions}>
+                <Text
+                  onPress={() => act(item.id, () => respondWorkforceAllocation(item.id, 'accept'), 'Failed to accept assignment.')}
+                  style={styles.accept}>
+                  {actingId === item.id ? 'Working…' : 'Accept'}
+                </Text>
+                <Text
+                  onPress={() => act(item.id, () => respondWorkforceAllocation(item.id, 'decline'), 'Failed to decline assignment.')}
+                  style={styles.decline}>
+                  Decline
+                </Text>
+              </View>
+            )}
+            {item.status === 'accepted' && (
+              <Text
+                onPress={() => act(item.id, () => completeWorkforceAllocation(item.id), 'Failed to complete assignment.')}
+                style={styles.accept}>
+                {actingId === item.id ? 'Working…' : 'Complete'}
+              </Text>
+            )}
+            {actionError && actingId === item.id && <Text style={styles.error}>{actionError}</Text>}
           </Card>
         )}
       />
@@ -73,4 +110,8 @@ const styles = StyleSheet.create({
   row: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, marginVertical: 5, borderWidth: 1, borderColor: '#E5E7EB' },
   name: { fontSize: 16, fontWeight: '700', color: '#111827' },
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2 },
+  actions: { flexDirection: 'row', gap: 16, marginTop: 8 },
+  accept: { color: '#047857', fontWeight: '700' },
+  decline: { color: '#B91C1C', fontWeight: '700' },
+  error: { color: '#B91C1C', fontSize: 13, marginTop: 6 },
 });

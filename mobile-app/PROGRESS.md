@@ -22,9 +22,10 @@
   estimates, allocate-ready backend (society/federation allocate APIs).
 - Security: `.env` gitignored (only `EXPO_PUBLIC_API_URL`), no service-role
   keys, token never logged, backend RBAC enforced + tested.
-- `npx tsc --noEmit` status at pause: see session log (2 remaining errors are
-  missing generated `expo-env.d.ts` / `.expo/types` — they appear after the
-  first `expo start`; template files, not app code).
+- `./node_modules/.bin/tsc --noEmit`: ZERO errors (verified this session).
+- `eas.json` created (development/preview/production profiles, no secrets).
+  Builds NOT yet run — they need the user's Expo account (`eas login`
+  → `eas init` for a project ID).
 
 ## Backend this app talks to (DO NOT rebuild)
 - Flask API at `EXPO_PUBLIC_API_URL` (dev: `http://192.168.0.109:5000/api`).

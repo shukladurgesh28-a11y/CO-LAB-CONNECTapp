@@ -68,7 +68,15 @@ export default function BookingDetail() {
         </Card>
       )}
 
-      {isWorker && next && (
+      {isWorker && booking.status === 'confirmed' && (
+        <>
+          <Btn title="Accept job" loading={busy}
+            onPress={() => run(() => updateBookingStatus(booking.id, 'accepted'), 'Job accepted.')} />
+          <Btn title="Decline job" variant="danger" loading={busy}
+            onPress={() => run(() => updateBookingStatus(booking.id, 'rejected'), 'Job declined.')} />
+        </>
+      )}
+      {isWorker && next && booking.status !== 'confirmed' && (
         <Btn title={next.label} loading={busy}
           onPress={() => run(() => updateBookingStatus(booking.id, next.to), `Status → ${next.to}`)} />
       )}

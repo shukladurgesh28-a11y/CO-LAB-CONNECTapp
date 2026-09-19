@@ -56,6 +56,13 @@ export default function ServiceMap({
 }) {
   const valid = markers.filter((m) => Number.isFinite(m?.lat) && Number.isFinite(m?.lng));
   const initial = center || valid[0] || DEFAULT_CENTER;
+  const geoapifyKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
+  const tileUrl = geoapifyKey
+    ? `https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${geoapifyKey}`
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const attribution = geoapifyKey
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://www.geoapify.com/">Geoapify</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200" style={{ height }}>
       <MapContainer
@@ -64,10 +71,7 @@ export default function ServiceMap({
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={false}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
+        <TileLayer url={tileUrl} attribution={attribution} />
         <Recenter center={center || valid[0]} />
         {onPick && <ClickPicker onPick={onPick} />}
         {valid.map((m, i) => (

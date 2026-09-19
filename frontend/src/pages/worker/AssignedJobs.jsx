@@ -179,7 +179,7 @@ export default function AssignedJobs() {
           <h3 className="text-lg font-medium text-gray-900 mb-1">No jobs found</h3>
           <p className="text-gray-500">
             {activeTab === 'all'
-              ? "You don't have any assigned jobs yet."
+              ? "You don't have any assigned jobs yet. New customer requests appear here only after your society allocates them to you — unassigned requests stay with the admin."
               : `No ${STATUS_LABELS[activeTab]?.toLowerCase()} jobs.`}
           </p>
         </div>

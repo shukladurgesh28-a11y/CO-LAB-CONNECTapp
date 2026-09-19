@@ -167,12 +167,15 @@ export default function AdminPanel() {
     setAllocatingReq(r.id);
     if (workers.length === 0) await loadTab('Workers', true);
   };
-  const confirmAllocate = (requestId) => mutate(`alloc-req-${requestId}`,
-    () => api.post('/api/allocations', { request_id: requestId, worker_id: Number(allocWorker) }),
-    `Worker allocated to request #${requestId}`).finally(() => {
-    setAllocatingReq(null);
-    setAllocWorker('');
-  });
+  const confirmAllocate = (requestId) => {
+    const chosen = workers.find((w) => String(w.id) === String(allocWorker));
+    return mutate(`alloc-req-${requestId}`,
+      () => api.post('/api/allocations', { request_id: requestId, worker_id: Number(allocWorker) }),
+      `Request #${requestId} allocated to ${chosen ? chosen.name : `worker #${allocWorker}`}. They will now see it in their panel.`).finally(() => {
+      setAllocatingReq(null);
+      setAllocWorker('');
+    });
+  };
   const sendBroadcast = () => mutate('broadcast',
     () => api.post('/api/admin/notifications/broadcast', broadcast), `Broadcast sent`);
   const createCategory = () => mutate('newcat',

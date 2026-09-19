@@ -14,6 +14,8 @@ export const getProgress = (reqId: number | string) =>
   apiGet(`/society/workforce/requirements/${reqId}/progress`);
 export const allocateRequirementWorker = (itemId: number, workerId: number) =>
   apiPost(`/society/workforce/items/${itemId}/allocate`, { worker_id: workerId });
+export const getRequirementMatches = (reqId: number | string) =>
+  apiGet<any[]>(`/society/workforce/requirements/${reqId}/matches`);
 export const updateRequirement = (reqId: number, patch: Record<string, unknown>) =>
   apiPut(`/society/workforce/requirements/${reqId}`, patch);
 export const cancelRequirement = (reqId: number) =>
