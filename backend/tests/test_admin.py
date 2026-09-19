@@ -72,6 +72,31 @@ class AdminTestCase(unittest.TestCase):
         self.assertEqual(logs.status_code, 200)
         self.assertTrue(len(logs.get_json()["data"]) > 0)
 
+    def test_platform_admin_can_allocate_worker(self):
+        from app.models.service import Service
+        from app.models.worker import Worker
+        customer = self.login("customer@demo.com")
+        admin = self.login("admin@demo.com")
+        with self.app.app_context():
+            service_id = Service.query.filter_by(slug="electrician").one().id
+            worker_id = Worker.query.filter_by(email="worker@demo.com").one().id
+        req = self.call("POST", "/api/requests", {
+            "service_id": service_id, "amount": 500.0,
+            "description": "Platform allocation test",
+            "location_address": "Pune",
+        }, customer)
+        self.assertEqual(req.status_code, 201, req.get_json())
+        request_id = req.get_json()["data"]["id"]
+        alloc = self.call("POST", "/api/allocations", {
+            "request_id": request_id, "worker_id": worker_id,
+        }, admin)
+        self.assertEqual(alloc.status_code, 201, alloc.get_json())
+        self.assertEqual(alloc.get_json()["data"]["worker_id"], worker_id)
+        booking_id = alloc.get_json()["data"]["booking_id"]
+        detail = self.call("GET", f"/api/bookings/{booking_id}", token=admin)
+        self.assertEqual(detail.get_json()["data"]["worker_id"], worker_id)
+        self.assertEqual(detail.get_json()["data"]["status"], "confirmed")
+
     def test_service_category_create_and_users_stats(self):
         admin = self.login("admin@demo.com")
         created = self.call("POST", "/api/admin/services/categories", {

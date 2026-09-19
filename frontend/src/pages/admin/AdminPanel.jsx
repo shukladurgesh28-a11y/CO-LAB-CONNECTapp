@@ -81,6 +81,8 @@ export default function AdminPanel() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [busy, setBusy] = useState(null);
   const [broadcast, setBroadcast] = useState({ title: '', message: '', role: '' });
+  const [allocatingReq, setAllocatingReq] = useState(null);
+  const [allocWorker, setAllocWorker] = useState('');
   const [newCat, setNewCat] = useState({ name: '', slug: '', description: '' });
   const [newSvc, setNewSvc] = useState({ name: '', slug: '', category_id: '', base_price: '500' });
 
@@ -159,6 +161,17 @@ export default function AdminPanel() {
   const toggleService = (s) => mutate(`svc-${s.id}`,
     () => api.patch(`/api/admin/services/${s.id}`, { is_active: !s.is_active }),
     `Service ${s.is_active ? 'deactivated' : 'activated'}`);
+  const startAllocate = async (r) => {
+    setAllocWorker('');
+    setAllocatingReq(r.id);
+    if (workers.length === 0) await loadTab('Workers', true);
+  };
+  const confirmAllocate = (requestId) => mutate(`alloc-req-${requestId}`,
+    () => api.post('/api/allocations', { request_id: requestId, worker_id: Number(allocWorker) }),
+    `Worker allocated to request #${requestId}`).finally(() => {
+    setAllocatingReq(null);
+    setAllocWorker('');
+  });
   const sendBroadcast = () => mutate('broadcast',
     () => api.post('/api/admin/notifications/broadcast', broadcast), `Broadcast sent`);
   const createCategory = () => mutate('newcat',
@@ -230,7 +243,7 @@ export default function AdminPanel() {
 
       {tab === 'Requests' && (
         <Section title="Service requests (all societies)">
-          <Table head={['ID', 'Service', 'Customer', 'Society', 'Status', 'Worker', 'Booking']}>
+          <Table head={['ID', 'Service', 'Customer', 'Society', 'Status', 'Worker', 'Booking', 'Action']}>
             {requests.map((r) => (
               <tr key={r.id}>
                 <td className="py-2.5 px-3 font-mono">#{r.id}</td>
@@ -240,6 +253,35 @@ export default function AdminPanel() {
                 <td className="py-2.5 px-3">{badge(r.status)}</td>
                 <td className="py-2.5 px-3">{r.allocated_worker?.name || (r.allocated_worker_id ? `#${r.allocated_worker_id}` : 'Unassigned')}</td>
                 <td className="py-2.5 px-3">{r.booking_id ? <Link to={`/customer/bookings/${r.booking_id}`} className="text-purple-700 font-semibold">#{r.booking_id}</Link> : '—'}</td>
+                <td className="py-2.5 px-3">
+                  {!r.allocated_worker_id && allocatingReq !== r.id && (
+                    <button onClick={() => startAllocate(r)}
+                      className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-700 text-white hover:bg-purple-800">
+                      Allocate
+                    </button>
+                  )}
+                  {!r.allocated_worker_id && allocatingReq === r.id && (
+                    <span className="flex items-center gap-1">
+                      <select value={allocWorker} onChange={(e) => setAllocWorker(e.target.value)}
+                        className="text-xs border rounded-lg px-1.5 py-1 max-w-[130px]">
+                        <option value="">Worker…</option>
+                        {workers
+                          .filter((w) => w.cooperative_id === r.cooperative_id && w.verification_status === 'verified')
+                          .map((w) => (
+                            <option key={w.id} value={w.id}>{w.name} (#{w.id})</option>
+                          ))}
+                      </select>
+                      <button onClick={() => confirmAllocate(r.id)} disabled={!allocWorker || busy === `alloc-req-${r.id}`}
+                        className="px-2 py-1 text-xs font-semibold rounded-lg bg-emerald-600 text-white disabled:opacity-50">
+                        OK
+                      </button>
+                      <button onClick={() => setAllocatingReq(null)}
+                        className="px-2 py-1 text-xs rounded-lg bg-gray-100">
+                        ✕
+                      </button>
+                    </span>
+                  )}
+                </td>
               </tr>
             ))}
           </Table>

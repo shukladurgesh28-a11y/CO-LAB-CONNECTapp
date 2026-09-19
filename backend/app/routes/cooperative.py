@@ -221,7 +221,7 @@ def create_allocation():
     try:
         user_id = int(get_jwt_identity())
         user, coop = get_user_cooperative(user_id)
-        if not coop:
+        if not coop and (not user or user.role != "platform_admin"):
             return error_response("No cooperative found", 404)
 
         data = request.get_json()
@@ -237,7 +237,11 @@ def create_allocation():
         sr = ServiceRequest.query.get(request_id)
         if not sr:
             return error_response("Service request not found", 404)
-        if sr.cooperative_id != coop.id:
+        if user.role == "platform_admin":
+            coop = Cooperative.query.get(sr.cooperative_id)
+            if not coop:
+                return error_response("Service request has no cooperative", 404)
+        elif sr.cooperative_id != coop.id:
             return error_response("Service request does not belong to this cooperative", 403)
 
         if Allocation.query.filter_by(request_id=request_id, status="accepted").first():
