@@ -251,10 +251,15 @@ const RequestDetail = () => {
                 <Clock className="w-4 h-4 text-gray-400" />
                 <span className="text-gray-900">{request.preferredTime}</span>
               </div>
-              {request.specialRequirements && (
+              {request.specialRequirements != null && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Special Requirements</label>
-                  <p className="text-gray-900 mt-1">{request.specialRequirements}</p>
+                  <p className="text-gray-900 mt-1">{
+                    typeof request.specialRequirements === 'string'
+                      ? request.specialRequirements
+                      : request.specialRequirements.notes
+                        || `${(request.specialRequirements.candidate_rankings || []).length} AI-ranked candidate(s) computed`
+                  }</p>
                 </div>
               )}
             </div>

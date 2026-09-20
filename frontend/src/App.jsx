@@ -351,6 +351,15 @@ export default function App() {
         >
           <Route path="/workforce/:id" element={<WorkforceDetail />} />
         </Route>
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={['cooperative_admin', 'federation_admin', 'platform_admin']}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/requests/:id" element={<CooperativeRequestDetail />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

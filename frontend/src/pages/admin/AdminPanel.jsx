@@ -256,7 +256,7 @@ export default function AdminPanel() {
                 <td className="py-2.5 px-3">{r.cooperative_name || `#${r.cooperative_id}`}</td>
                 <td className="py-2.5 px-3">{badge(r.status)}</td>
                 <td className="py-2.5 px-3">{r.allocated_worker?.name || (r.allocated_worker_id ? `#${r.allocated_worker_id}` : 'Unassigned')}</td>
-                <td className="py-2.5 px-3">{r.booking_id ? <Link to={`/customer/bookings/${r.booking_id}`} className="text-purple-700 font-semibold">#{r.booking_id}</Link> : '—'}</td>
+                <td className="py-2.5 px-3"><Link to={`/requests/${r.id}`} className="text-purple-700 font-semibold">Open</Link>{r.booking_id ? <span className="text-gray-400"> · #{r.booking_id}</span> : ''}</td>
                 <td className="py-2.5 px-3">
                   {!r.allocated_worker_id && allocatingReq !== r.id && (
                     <button onClick={() => startAllocate(r)}
