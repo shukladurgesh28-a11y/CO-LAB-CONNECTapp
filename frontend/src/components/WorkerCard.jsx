@@ -29,7 +29,7 @@ export default function WorkerCard({ worker, onClick, actionLabel = 'View Profil
   const displaySkills = worker?.skills?.slice(0, 3) || [];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 transition-all duration-200 hover:shadow-md">
+    <div className="cc-card cc-card-hover bg-white rounded-xl shadow-sm border border-gray-100 p-5">
       <div className="flex items-start gap-4">
         <div
           className={`w-14 h-14 rounded-full ${AVATAR_COLORS[colorIndex]} flex items-center justify-center flex-shrink-0`}

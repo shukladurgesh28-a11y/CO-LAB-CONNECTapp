@@ -37,6 +37,7 @@ import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import QRScannerModal from '../../components/QRScannerModal';
+import { SlideTabs } from '../../motion/primitives';
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
 
@@ -235,54 +236,17 @@ export default function UnifiedDashboard() {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`pb-3 px-4 text-sm font-semibold transition-colors relative ${
-            activeTab === 'overview'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          Integrated Overview & Analytics
-        </button>
-        <button
-          onClick={() => setActiveTab('allocations')}
-          className={`pb-3 px-4 text-sm font-semibold transition-colors relative flex items-center gap-2 ${
-            activeTab === 'allocations'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          Live Request Queue
-          {stats.pending_requests > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full font-bold">
-              {stats.pending_requests}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('societies')}
-          className={`pb-3 px-4 text-sm font-semibold transition-colors relative ${
-            activeTab === 'societies'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          Society Roster & Workforce
-        </button>
-        <button
-          onClick={() => setActiveTab('welfare')}
-          className={`pb-3 px-4 text-sm font-semibold transition-colors relative ${
-            activeTab === 'welfare'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          Welfare & Fairness Engine (Gini 0.18)
-        </button>
-      </div>
+      {/* Tab Navigation — sliding active indicator */}
+      <SlideTabs
+        value={activeTab}
+        onChange={setActiveTab}
+        tabs={[
+          { key: 'overview', label: 'Integrated Overview & Analytics' },
+          { key: 'allocations', label: `Live Request Queue${stats.pending_requests > 0 ? ` (${stats.pending_requests})` : ''}` },
+          { key: 'societies', label: 'Society Roster & Workforce' },
+          { key: 'welfare', label: 'Welfare & Fairness Engine (Gini 0.18)' },
+        ]}
+      />
 
       {/* TAB 1: INTEGRATED OVERVIEW */}
       {activeTab === 'overview' && (

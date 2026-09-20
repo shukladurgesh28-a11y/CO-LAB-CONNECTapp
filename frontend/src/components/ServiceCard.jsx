@@ -14,7 +14,7 @@ export default function ServiceCard({ service, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02]"
+      className="cc-card cc-card-hover bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer"
     >
       <div
         className={`h-28 bg-gradient-to-br ${

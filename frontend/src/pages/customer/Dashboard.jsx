@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
+import { CardSkeleton, CountUp } from '../../motion/primitives';
 import {
   Calendar,
   CheckCircle,
@@ -80,9 +81,11 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {STAT_CARDS.map((card) => {
-          let value = stats[card.key];
-          if (card.key === 'spent') value = `₹${value.toLocaleString()}`;
-          else if (card.key === 'rating') value = value > 0 ? value.toFixed(1) : '—';
+          const raw = stats[card.key];
+          let value;
+          if (card.key === 'spent') value = <CountUp value={raw} format={(v) => `₹${Math.round(v).toLocaleString('en-IN')}`} />;
+          else if (card.key === 'rating') value = raw > 0 ? raw.toFixed(1) : '—';
+          else value = <CountUp value={raw} />;
           return (
             <div key={card.key} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
               <div className="flex items-center gap-3">
@@ -122,8 +125,9 @@ export default function Dashboard() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Bookings</h2>
           {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="space-y-3">
+              <CardSkeleton />
+              <CardSkeleton />
             </div>
           ) : activeBookings.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-gray-100">
@@ -134,9 +138,9 @@ export default function Dashboard() {
             <div className="space-y-3">
               {activeBookings.map((booking) => (
                 <div
-                  key={booking._id}
-                  onClick={() => navigate(`/customer/bookings/${booking._id}`)}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all duration-200"
+                  key={booking.id ?? booking._id}
+                  onClick={() => navigate(`/customer/bookings/${booking.id ?? booking._id}`)}
+                  className="cc-card cc-card-hover bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-900">
@@ -164,8 +168,8 @@ export default function Dashboard() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
           {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="space-y-3">
+              <CardSkeleton />
             </div>
           ) : recentActivity.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-gray-100">

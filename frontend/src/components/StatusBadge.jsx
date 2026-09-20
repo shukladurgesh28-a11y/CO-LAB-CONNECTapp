@@ -27,7 +27,8 @@ export default function StatusBadge({ status, size = 'md' }) {
 
   return (
     <span
-      className={`inline-block rounded-full font-medium capitalize ${colorClass} ${sizeClass}`}
+      key={status}
+      className={`cc-enter inline-block rounded-full font-medium capitalize transition-colors duration-200 ${colorClass} ${sizeClass}`}
     >
       {status?.replace(/_/g, ' ')}
     </span>

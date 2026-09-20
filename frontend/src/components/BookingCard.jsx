@@ -18,7 +18,7 @@ export default function BookingCard({ booking, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 ${borderColor} p-4 cursor-pointer transition-all duration-200 hover:shadow-md`}
+      className={`cc-card cc-card-hover bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 ${borderColor} p-4 cursor-pointer`}
     >
       <div className="flex items-start justify-between mb-3">
         <h3 className="font-semibold text-gray-900 truncate pr-3">

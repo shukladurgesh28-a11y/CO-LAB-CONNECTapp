@@ -7,6 +7,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import toast from 'react-hot-toast';
 import { useRealtimeSync } from '../../api/realtime';
 import ServiceMap from '../../components/ServiceMap';
+import { MatchFlow } from '../../motion/primitives';
 
 const UrgencyBadge = ({ urgency }) => {
   const colors = {
@@ -297,7 +298,18 @@ const RequestDetail = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+          <MatchFlow
+            stage={
+              request?.allocated_worker_id || ['allocated', 'accepted', 'en_route', 'service_started', 'in_progress', 'completed'].includes(request?.status)
+                ? 4
+                : recommendations.length > 0
+                  ? 3
+                  : loadingRecommendations
+                    ? 1
+                    : 0
+            }
+          />
+          <div className="flex items-center justify-between mb-6 mt-2">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-500" />
               AI Recommendations

@@ -5,6 +5,12 @@ import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import QRScannerModal from '../../components/QRScannerModal';
 import AIAssistant from '../../components/AIAssistant';
+import { CountUp } from '../../motion/primitives';
+
+const inr = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+const CountNum = ({ value, money }) => (
+  <CountUp value={Number(value || 0)} format={money ? (v) => inr(Math.round(v)) : undefined} />
+);
 
 const TABS = [
   'Overview', 'Requests', 'AI Assistant', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
@@ -232,16 +238,16 @@ export default function AdminPanel() {
 
       {tab === 'Overview' && overview && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card label="Federations" value={overview.federations_total} sub={`${overview.federations_active} active`} />
-          <Card label="Societies" value={overview.societies_total} sub={`${overview.societies_active} active`} />
-          <Card label="Workers" value={overview.workers_total} sub={`${overview.workers_verified} verified`} />
-          <Card label="Customers" value={overview.customers_total} sub={`${overview.users_total} users`} />
-          <Card label="Active jobs" value={overview.active_jobs} />
-          <Card label="Workforce needs" value={overview.workforce_requirements} />
-          <Card label="Completed" value={overview.completed_jobs} />
-          <Card label="Revenue" value={`₹${Number(overview.revenue_total).toLocaleString('en-IN')}`} sub={`Commission ₹${Number(overview.commission_total).toLocaleString('en-IN')}`} />
-          <Card label="Payouts" value={`₹${Number(overview.payouts_total).toLocaleString('en-IN')}`} />
-          <Card label="Welfare fund" value={`₹${Number(overview.welfare_fund).toLocaleString('en-IN')}`} sub={`${overview.open_disputes} open disputes`} />
+          <Card label="Federations" value={<CountNum value={overview.federations_total} />} sub={`${overview.federations_active} active`} />
+          <Card label="Societies" value={<CountNum value={overview.societies_total} />} sub={`${overview.societies_active} active`} />
+          <Card label="Workers" value={<CountNum value={overview.workers_total} />} sub={`${overview.workers_verified} verified`} />
+          <Card label="Customers" value={<CountNum value={overview.customers_total} />} sub={`${overview.users_total} users`} />
+          <Card label="Active jobs" value={<CountNum value={overview.active_jobs} />} />
+          <Card label="Workforce needs" value={<CountNum value={overview.workforce_requirements} />} />
+          <Card label="Completed" value={<CountNum value={overview.completed_jobs} />} />
+          <Card label="Revenue" value={<CountNum value={overview.revenue_total} money />} sub={`Commission ₹${Number(overview.commission_total).toLocaleString('en-IN')}`} />
+          <Card label="Payouts" value={<CountNum value={overview.payouts_total} money />} />
+          <Card label="Welfare fund" value={<CountNum value={overview.welfare_fund} money />} sub={`${overview.open_disputes} open disputes`} />
         </div>
       )}
 
@@ -419,10 +425,10 @@ export default function AdminPanel() {
       {tab === 'Payments' && payments && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card label="Revenue" value={`₹${Number(payments.totals.revenue).toLocaleString('en-IN')}`} />
-            <Card label="Commission" value={`₹${Number(payments.totals.commission).toLocaleString('en-IN')}`} />
-            <Card label="Welfare" value={`₹${Number(payments.totals.welfare).toLocaleString('en-IN')}`} />
-            <Card label="Payouts" value={`₹${Number(payments.totals.payouts).toLocaleString('en-IN')}`} />
+            <Card label="Revenue" value={<CountNum value={payments.totals.revenue} money />} />
+            <Card label="Commission" value={<CountNum value={payments.totals.commission} money />} />
+            <Card label="Welfare" value={<CountNum value={payments.totals.welfare} money />} />
+            <Card label="Payouts" value={<CountNum value={payments.totals.payouts} money />} />
           </div>
           <Section title="Transactions">
             <Table head={['ID', 'Booking', 'Customer', 'Service', 'Amount', 'Status']}>

@@ -1,0 +1,130 @@
+/* CO-LAB CONNECT global motion system (CSS layer).
+ * Transform + opacity only. All timings mirror motion/tokens.js.
+ * Respects prefers-reduced-motion: movement removed, state changes kept. */
+
+/* ---------- global button tactile feedback (all roles, one language) ---------- */
+button:not(:disabled) {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 150ms ease-out, box-shadow 150ms ease-out, opacity 150ms ease-out;
+}
+button:not(:disabled):hover { filter: brightness(1.03); }
+button:not(:disabled):active { transform: scale(0.97); }
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* ---------- interactive bases ---------- */
+.cc-btn {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 150ms ease-out;
+}
+.cc-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 4px 12px rgba(30, 27, 75, 0.16);
+}
+.cc-btn:active:not(:disabled) { transform: scale(0.97); }
+.cc-btn:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+.cc-card {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease-out;
+}
+.cc-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(30, 27, 75, 0.1);
+}
+
+.cc-selectable { transition: border-color 180ms ease-out, background-color 180ms ease-out, box-shadow 180ms ease-out; }
+.cc-selectable[data-active="true"] {
+  box-shadow: 0 0 0 2px #4f46e5 inset, 0 6px 16px rgba(79, 70, 229, 0.14);
+}
+
+/* ---------- sidebar / nav ---------- */
+.cc-navlink { transition: background-color 180ms ease-out, color 180ms ease-out; }
+.cc-navlink[data-active="true"] { transition: background-color 200ms ease-out, color 200ms ease-out; }
+
+/* ---------- dropdown ---------- */
+@keyframes cc-drop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.cc-drop { animation: cc-drop-in 180ms cubic-bezier(0.16, 1, 0.3, 1); transform-origin: top right; }
+
+/* ---------- skeleton shimmer ---------- */
+@keyframes cc-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.cc-skeleton {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: cc-shimmer 1.6s linear infinite;
+}
+
+/* ---------- entrance helpers ---------- */
+@keyframes cc-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cc-enter { animation: cc-fade-up 240ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes cc-pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.cc-pop { animation: cc-pop-in 250ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes cc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.cc-fade { animation: cc-fade-in 220ms ease-out both; }
+
+/* ---------- matching flow nodes ---------- */
+@keyframes cc-node-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+}
+.cc-node-pulse { animation: cc-node-pulse 1.8s ease-out infinite; }
+
+@keyframes cc-flow-dash {
+  to { stroke-dashoffset: -16; }
+}
+.cc-flow-line { stroke-dasharray: 4 4; animation: cc-flow-dash 1.2s linear infinite; }
+
+/* ---------- notification dot ---------- */
+@keyframes cc-dot-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+.cc-dot-in { animation: cc-dot-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ---------- hero image ---------- */
+.cc-hero-img { animation: cc-fade-in 350ms ease-out both; }
+
+/* ---------- touch feedback ---------- */
+@media (hover: none) {
+  .cc-btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.92; }
+  .cc-card-hover:active { transform: scale(0.995); }
+}
+
+/* ---------- reduced motion: keep state, drop movement ---------- */
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled) { transition: background-color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out; }
+  button:not(:disabled):hover, button:not(:disabled):active { transform: none; filter: none; }
+  .cc-btn, .cc-card, .cc-selectable, .cc-navlink { transition: background-color 120ms ease-out, border-color 120ms ease-out; }
+  .cc-btn:hover:not(:disabled), .cc-btn:active:not(:disabled),
+  .cc-card-hover:hover, .cc-card-hover:active { transform: none; box-shadow: none; }
+  .cc-drop, .cc-enter, .cc-pop, .cc-fade { animation: none; }
+  .cc-skeleton { animation: none; background: #e5e7eb; }
+  .cc-node-pulse { animation: none; }
+  .cc-flow-line { animation: none; }
+  .cc-dot-in { animation: none; }
+  .cc-hero-img { animation: none; }
+}

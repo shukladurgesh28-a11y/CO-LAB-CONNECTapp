@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
 import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { CardSkeleton } from '../../motion/primitives';
 import { Calendar, Clock, MapPin, ListX } from 'lucide-react';
 import { useRealtimeSync } from '../../api/realtime';
 
@@ -91,7 +91,11 @@ export default function Bookings() {
 
       {/* Bookings List */}
       {loading ? (
-        <LoadingSpinner message="Loading bookings..." />
+        <div className="space-y-3">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
       ) : filteredBookings.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center border border-gray-100">
           <ListX className="mx-auto text-gray-300 mb-4" size={48} />
@@ -109,14 +113,14 @@ export default function Bookings() {
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div key={activeTab} className="cc-enter space-y-4">
           {filteredBookings.map((booking) => (
             <div
               key={booking.id}
               onClick={() => navigate(booking.is_request
                 ? `/customer/requests/${booking.request_id}`
                 : `/customer/bookings/${booking.id}`)}
-              className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all duration-200"
+              className="cc-card cc-card-hover bg-white rounded-xl p-5 shadow-sm border border-gray-100 cursor-pointer"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>

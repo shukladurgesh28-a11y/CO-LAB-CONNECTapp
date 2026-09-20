@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext';
 import { useLanguage } from './i18n/LanguageContext';
 import { lazy, Suspense, useState } from 'react';
 import NotificationBell from './components/NotificationBell';
+import { PageFade } from './motion/primitives';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
@@ -84,7 +85,9 @@ function SidebarLink({ to, icon, label }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${
+      data-active={isActive}
+      aria-current={isActive ? 'page' : undefined}
+      className={`cc-navlink flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm ${
         isActive
           ? 'bg-blue-50 text-blue-700 font-medium'
           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -168,6 +171,15 @@ function PlatformAdminSidebar() {
   );
 }
 
+function RouteMotion() {
+  const location = useLocation();
+  return (
+    <PageFade k={location.pathname}>
+      <Outlet />
+    </PageFade>
+  );
+}
+
 function Layout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
@@ -233,7 +245,7 @@ function Layout() {
         </aside>
         <main className="flex-1 p-4 sm:p-6 overflow-auto min-w-0">
           <Suspense fallback={<LoadingSpinner />}>
-            <Outlet />
+            <RouteMotion />
           </Suspense>
         </main>
       </div>
