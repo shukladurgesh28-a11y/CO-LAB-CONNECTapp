@@ -86,4 +86,11 @@ colabconnect-source-export.txt
 *-source-export.txt
 project-tree.txt
 /package.json
-/package-lock.json
+/package-lock.json
+
+# ========================
+# LOCAL PRIVATE BACKUPS (never push)
+# ========================
+/_private/
+/PRIVATE-KEYS-BACKUP.txt
+KEYS-BACKUP.txt
