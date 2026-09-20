@@ -248,7 +248,7 @@ const Allocations = () => {
                       <tr key={allocation.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <span className="text-sm font-medium text-blue-600">
-                            #{allocation.request_id?.slice(-8)}
+                            #{String(allocation.request_id ?? '').slice(-8)}
                           </span>
                         </td>
                         <td className="px-6 py-4">

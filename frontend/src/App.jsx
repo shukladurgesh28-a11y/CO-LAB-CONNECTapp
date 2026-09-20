@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useLanguage } from './i18n/LanguageContext';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import NotificationBell from './components/NotificationBell';
 
 const Landing = lazy(() => import('./pages/Landing'));
@@ -171,6 +171,7 @@ function PlatformAdminSidebar() {
 function Layout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const [menuOpen, setMenuOpen] = useState(false);
   const sidebarMap = {
     customer: <CustomerSidebar t={t} />,
     worker: <WorkerSidebar t={t} />,
@@ -181,13 +182,21 @@ function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">CC</span>
-          </div>
-          <span className="font-bold text-gray-900 text-lg">{t('common.appName')}</span>
-        </Link>
+      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMenuOpen((v) => !v)} aria-label="Menu"
+            className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+            <span className="block w-5 h-0.5 bg-current mb-1" />
+            <span className="block w-5 h-0.5 bg-current mb-1" />
+            <span className="block w-5 h-0.5 bg-current" />
+          </button>
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">CC</span>
+            </div>
+            <span className="font-bold text-gray-900 text-lg hidden sm:inline">{t('common.appName')}</span>
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
           <Link
             to="/scanner"
@@ -213,10 +222,16 @@ function Layout() {
         </div>
       </header>
       <div className="flex">
-        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-57px)] p-4 sticky top-[57px]">
+        {menuOpen && (
+          <div onClick={() => setMenuOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/40 z-30" />
+        )}
+        <aside
+          className={`${menuOpen ? 'flex fixed inset-y-0 left-0 z-40 pt-[57px]' : 'hidden'} md:flex w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-57px)] p-4 md:sticky md:top-[57px]`}
+          onClick={() => setMenuOpen(false)}>
           {sidebarMap[user?.role]}
         </aside>
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-auto min-w-0">
           <Suspense fallback={<LoadingSpinner />}>
             <Outlet />
           </Suspense>
