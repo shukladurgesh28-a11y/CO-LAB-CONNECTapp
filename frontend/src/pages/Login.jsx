@@ -65,8 +65,52 @@ export default function Login() {
     }
   };
 
+  const highlights = [
+    { icon: '🔧', label: 'Find Services' },
+    { icon: '👷', label: 'Empower Workers' },
+    { icon: '🏛️', label: 'Support Cooperatives' },
+    { icon: '🌟', label: 'Build Communities' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Brand banner panel */}
+      <div className="relative overflow-hidden md:w-[46%] bg-gradient-to-br from-sky-200 via-blue-100 to-amber-50 flex flex-col justify-center px-8 sm:px-12 py-12">
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-blue-300/30 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-28 -left-20 w-80 h-80 bg-amber-200/40 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-1/3 left-1/4 w-40 h-40 bg-emerald-200/30 rounded-full blur-xl pointer-events-none" />
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-2xl shadow flex items-center justify-center">
+              <span className="text-blue-700 font-black text-lg">CC</span>
+            </div>
+            <div>
+              <p className="text-2xl font-black tracking-wide text-slate-800">CO-LAB</p>
+              <p className="text-2xl font-light tracking-[0.3em] text-slate-600">CONNECT</p>
+            </div>
+          </div>
+          <p className="mt-2 text-xs font-semibold tracking-widest text-slate-500">
+            People • Skills • Opportunities • Together
+          </p>
+          <h2 className="mt-6 text-3xl sm:text-4xl font-extrabold text-slate-800 leading-tight">
+            Stronger Communities.<br />Greater Opportunities.
+          </h2>
+          <p className="mt-3 text-sm text-slate-600 max-w-sm">
+            Connecting customers, workers, cooperatives, and communities for a better tomorrow.
+          </p>
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-2 max-w-md">
+            {highlights.map((h) => (
+              <div key={h.label} className="bg-white/80 backdrop-blur rounded-xl px-2 py-3 text-center shadow-sm">
+                <div className="text-xl">{h.icon}</div>
+                <div className="text-[11px] font-semibold text-slate-700 mt-1">{h.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Login form */}
+      <div className="flex-1 bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
@@ -170,6 +214,7 @@ export default function Login() {
             </Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
