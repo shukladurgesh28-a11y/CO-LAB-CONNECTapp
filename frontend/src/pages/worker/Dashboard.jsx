@@ -3,44 +3,28 @@ import { Link } from 'react-router-dom';
 import {
   Briefcase,
   CheckCircle,
-  DollarSign,
-  Star,
-  User,
   Clock,
   MapPin,
   ArrowRight,
-  Loader2,
-  ToggleLeft,
-  ToggleRight,
-  Calendar,
-  ChevronRight,
-  Wrench,
-  FileText,
+  Star,
+  Zap,
 } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../i18n/LanguageContext';
 import toast from 'react-hot-toast';
+import StatusBadge from '../../components/StatusBadge';
+import { PageHero, SectionCard, StatTile, Avatar, inr, safeDate } from '../../components/ds';
+import { CardSkeleton } from '../../motion/primitives';
 
-function StatsCard({ icon: Icon, label, value, color, bgColor }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${bgColor}`}>
-          <Icon className={`w-6 h-6 ${color}`} />
-        </div>
-        <div>
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+const daypart = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { t } = useLanguage();
   const [profile, setProfile] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +32,6 @@ export default function Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true);
       const [profileRes, bookingsRes] = await Promise.all([
         api.get('/api/workers/me/profile'),
         api.get('/api/bookings/'),
@@ -73,12 +56,11 @@ export default function Dashboard() {
 
   const toggleAvailability = async () => {
     if (!profile) return;
-    const newStatus = profile.isAvailable ? 'offline' : 'available';
     setTogglingAvailability(true);
     try {
       await api.put(`/api/workers/${profile.id}`, { is_available: !profile.isAvailable });
       setProfile((prev) => ({ ...prev, isAvailable: !prev.isAvailable }));
-      toast.success(`You are now ${newStatus}`);
+      toast.success(`You are now ${!profile.isAvailable ? 'available' : 'offline'}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update availability');
     } finally {
@@ -88,298 +70,147 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="max-w-7xl mx-auto space-y-4">
+        <CardSkeleton /><CardSkeleton /><CardSkeleton />
       </div>
     );
   }
 
-  const workerName = profile?.name || user?.name || 'Worker';
+  const firstName = (profile?.name || user?.name || 'Worker').split(' ')[0];
   const activeJobs = bookings.filter((b) =>
     ['confirmed', 'accepted', 'en_route', 'service_started', 'in_progress'].includes(b.status)
   );
   const completedJobs = bookings.filter((b) => b.status === 'completed');
-  const upcomingJobs = bookings
-    .filter((b) => ['confirmed', 'en_route'].includes(b.status))
-    .slice(0, 3);
-  const recentCompletions = completedJobs.slice(0, 3);
-
-  const totalEarnings = completedJobs.reduce((sum, b) => sum + (b.final_amount || b.total_amount || b.totalAmount || b.amount || 0), 0);
-  const thisMonth = new Date().getMonth();
-  const thisYear = new Date().getFullYear();
-  const monthlyEarnings = completedJobs
-    .filter((b) => {
-      const d = new Date(b.completedAt || b.updatedAt || b.createdAt);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-    })
-    .reduce((sum, b) => sum + (b.final_amount || b.total_amount || b.totalAmount || b.amount || 0), 0);
-
-  const avgRating =
-    completedJobs.length > 0
-      ? (
-          completedJobs.reduce((sum, b) => sum + (b.rating || 0), 0) /
-          completedJobs.filter((b) => b.rating).length || 0
-        ).toFixed(1)
-      : '0.0';
+  const newRequests = bookings.filter((b) => b.status === 'confirmed');
+  const payoutOf = (b) => Number(b.financials?.worker_payout ?? b.final_amount ?? b.total_amount ?? 0);
+  const earned = completedJobs.reduce((s, b) => s + payoutOf(b), 0);
+  const rated = completedJobs.filter((b) => Number(b.rating) > 0);
+  const avgRating = rated.length
+    ? (rated.reduce((s, b) => s + Number(b.rating), 0) / rated.length).toFixed(1)
+    : '—';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Hello, {workerName} 👋
-        </h1>
-        <div className="flex items-center gap-3 mt-2">
-          <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-              profile?.isVerified
-                ? 'bg-green-100 text-green-700'
-                : 'bg-yellow-100 text-yellow-700'
-            }`}
-          >
-            {profile?.isVerified ? (
-              <CheckCircle className="w-4 h-4" />
-            ) : (
-              <Clock className="w-4 h-4" />
-            )}
-            {profile?.isVerified ? 'Verified Worker' : 'Unverified'}
-          </span>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatsCard
-          icon={Briefcase}
-          label="Active Jobs"
-          value={activeJobs.length}
-          color="text-blue-600"
-          bgColor="bg-blue-100"
-        />
-        <StatsCard
-          icon={CheckCircle}
-          label="Completed"
-          value={completedJobs.length}
-          color="text-green-600"
-          bgColor="bg-green-100"
-        />
-        <StatsCard
-          icon={DollarSign}
-          label="This Month Earnings"
-          value={`$${monthlyEarnings.toFixed(2)}`}
-          color="text-purple-600"
-          bgColor="bg-purple-100"
-        />
-        <StatsCard
-          icon={Star}
-          label="Rating"
-          value={avgRating}
-          color="text-yellow-600"
-          bgColor="bg-yellow-100"
-        />
-      </div>
-
-      {/* Availability Toggle */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-3 h-3 rounded-full ${
-                profile?.isAvailable ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-              }`}
-            />
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Identity hero: verification + availability in one glance */}
+      <section className="cc-enter relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#06392f] via-[#046c4e] to-[#10b981] text-white p-6 sm:p-8 shadow-lg">
+        <div className="absolute -right-16 -top-20 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar name={profile?.name || user?.name} size="lg" />
             <div>
-              <h3 className="font-semibold text-gray-900">Current Availability</h3>
-              <p className="text-sm text-gray-500">
-                {profile?.isAvailable ? 'You are available for new jobs' : 'You are currently offline'}
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100/80">{daypart()}, {firstName} 👋</p>
+              <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/15 backdrop-blur">
+                {profile?.isVerified ? <CheckCircle size={14} /> : <Clock size={14} />}
+                {profile?.isVerified ? 'Verified Worker' : 'Verification pending'}
+              </div>
             </div>
           </div>
           <button
             onClick={toggleAvailability}
             disabled={togglingAvailability}
-            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
-              profile?.isAvailable ? 'bg-green-500' : 'bg-gray-300'
+            aria-pressed={!!profile?.isAvailable}
+            className={`flex items-center gap-3 px-5 py-3 rounded-2xl font-bold text-sm transition-colors disabled:opacity-60 ${
+              profile?.isAvailable ? 'bg-white text-emerald-700' : 'bg-black/25 text-white border border-white/30'
             }`}
           >
-            <span
-              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                profile?.isAvailable ? 'translate-x-7' : 'translate-x-1'
-              }`}
-            />
+            <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${profile?.isAvailable ? 'bg-emerald-500' : 'bg-white/25'}`}>
+              <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${profile?.isAvailable ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </span>
+            {togglingAvailability ? 'Saving…' : profile?.isAvailable ? 'Available for Jobs' : 'Go Available'}
           </button>
         </div>
-        <p className="mt-2 text-sm font-medium">
-          {profile?.isAvailable ? (
-            <span className="text-green-600">Available</span>
-          ) : (
-            <span className="text-gray-500">Offline</span>
-          )}
-        </p>
+        {!profile?.isAvailable && (
+          <p className="relative text-xs text-emerald-50/80 mt-3">You are offline — new allocations will skip you until you switch on.</p>
+        )}
+      </section>
+
+      {/* Today strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatTile label="New requests" value={newRequests.length} sub="Awaiting your accept" />
+        <StatTile label="Active jobs" value={activeJobs.length} sub="In progress now" />
+        <StatTile label="Earned" value={earned} money sub={`${completedJobs.length} completed`} />
+        <StatTile label="Rating" value={avgRating} sub={profile?.verification_status || '—'} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Upcoming Assignments */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Upcoming Assignments</h3>
-            <Link
-              to="/worker/jobs"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
+      {/* Today's work */}
+      <SectionCard
+        title="Today's work"
+        sub="Newest assignments first — accept to lock them in"
+        action={<Link to="/worker/jobs" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">All jobs <ArrowRight size={14} /></Link>}
+      >
+        {activeJobs.length === 0 ? (
+          <div className="text-center py-8">
+            <Briefcase className="mx-auto text-gray-300 mb-2" size={36} />
+            <p className="text-sm font-medium text-gray-900">No active jobs</p>
+            <p className="text-xs text-gray-500 mt-1">New allocations from your society will land here.</p>
           </div>
-          {upcomingJobs.length === 0 ? (
-            <p className="text-gray-500 text-sm py-4 text-center">No upcoming assignments</p>
-          ) : (
-            <div className="space-y-3">
-              {upcomingJobs.map((job) => (
-                <Link
-                  key={job._id}
-                  to={`/worker/jobs/${job._id}`}
-                  className="block p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium text-gray-900">
-                          {job.serviceName || job.service?.name || 'Service'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(job.scheduledDate || job.date || job.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5" />
-                          {job.customerArea || job.area || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        job.status === 'confirmed'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-orange-100 text-orange-700'
-                      }`}
-                    >
-                      {job.status === 'confirmed' ? 'Confirmed' : 'En Route'}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent Completions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Recent Completions</h3>
-            <Link
-              to="/worker/history"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
+        ) : (
+          <div className="space-y-3">
+            {activeJobs.slice(0, 4).map((job) => (
+              <Link
+                key={job.id}
+                to={`/worker/jobs/${job.id}`}
+                className="cc-card cc-card-hover flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-white"
+              >
+                <span className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0" aria-hidden="true">🔧</span>
+                <span className="flex-1 min-w-0">
+                  <span className="font-semibold text-gray-900 text-sm block truncate">
+                    {job.service_name || job.service?.name || 'Service'}
+                  </span>
+                  <span className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                    <MapPin size={12} />{(job.location_address || 'Location').slice(0, 32)}
+                    <Clock size={12} />{safeDate(job.service_date || job.preferred_date)}
+                  </span>
+                </span>
+                <StatusBadge status={job.status} size="sm" />
+              </Link>
+            ))}
           </div>
-          {recentCompletions.length === 0 ? (
-            <p className="text-gray-500 text-sm py-4 text-center">No completed jobs yet</p>
-          ) : (
-            <div className="space-y-3">
-              {recentCompletions.map((job) => (
-                <Link
-                  key={job._id}
-                  to={`/worker/jobs/${job._id}`}
-                  className="block p-4 rounded-lg border border-gray-100 hover:border-green-200 hover:bg-green-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="font-medium text-gray-900">
-                          {job.serviceName || job.service?.name || 'Service'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(job.completedAt || job.updatedAt).toLocaleDateString()}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5" />
-                          {job.customerArea || job.area || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-semibold text-green-600">
-                        ${(job.totalAmount || job.amount || 0).toFixed(2)}
-                      </span>
-                      {job.rating > 0 && (
-                        <div className="flex items-center gap-0.5 mt-1 justify-end">
-                          <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                          <span className="text-sm text-gray-600">{job.rating}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </SectionCard>
 
-      {/* Quick Links */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Quick Links</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link
-            to="/worker/profile"
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-              <User className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <span className="font-medium text-gray-900 block">My Profile</span>
-              <span className="text-sm text-gray-500">View & edit profile</span>
-            </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
-          </Link>
+      {/* Earnings + skills */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SectionCard
+          title="Earnings"
+          sub="Backend-calculated payouts only"
+          action={<Link to="/worker/earnings" className="text-sm font-semibold text-emerald-700">Details</Link>}
+        >
+          <p className="text-3xl font-extrabold text-gray-900">{inr(earned)}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {completedJobs.length} completed jobs • {profile?.experience_years || 0} yrs experience
+          </p>
+          <div className="mt-3 h-2 rounded-full bg-gray-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+              style={{ width: `${Math.min(100, completedJobs.length * 10)}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1.5">Progress to 10-job milestone</p>
+        </SectionCard>
 
-          <Link
-            to="/worker/availability"
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-100 hover:border-green-200 hover:bg-green-50 transition-colors group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
-              <Clock className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <span className="font-medium text-gray-900 block">Update Availability</span>
-              <span className="text-sm text-gray-500">Set your schedule</span>
-            </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
-          </Link>
-
-          <Link
-            to="/worker/earnings"
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-colors group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-              <DollarSign className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <span className="font-medium text-gray-900 block">View Earnings</span>
-              <span className="text-sm text-gray-500">Track your income</span>
-            </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 ml-auto" />
-          </Link>
-        </div>
+        <SectionCard
+          title="Skills & standing"
+          action={<Link to="/worker/skills" className="text-sm font-semibold text-emerald-700">Manage</Link>}
+        >
+          <div className="flex flex-wrap gap-2">
+            {(profile?.skills || []).slice(0, 6).map((s, i) => (
+              <span key={i} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold">
+                {s.skill_name || s.name}
+              </span>
+            ))}
+            {(profile?.skills || []).length === 0 && (
+              <p className="text-xs text-gray-400">No skills listed — add them to get matched.</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-4 text-sm">
+            <Star size={16} className="text-amber-400 fill-amber-400" />
+            <span className="font-bold text-gray-900">{avgRating}</span>
+            <span className="text-gray-500 text-xs">average rating</span>
+            <Zap size={14} className="text-indigo-500 ml-2" />
+            <span className="text-xs text-gray-500">Workload {profile?.current_workload || 0}/{profile?.max_workload || 5}</span>
+          </div>
+        </SectionCard>
       </div>
     </div>
   );

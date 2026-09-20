@@ -1,37 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
-  Shield,
-  Users,
-  Brain,
-  CreditCard,
-  MapPin,
-  BarChart3,
-  Zap,
-  Droplets,
-  Hammer,
-  Sparkles,
-  Baby,
-  PawPrint,
-  ArrowRight,
-  ChevronRight,
+  Shield, Users, Brain, CreditCard, MapPin, BarChart3,
+  Zap, Droplets, Hammer, Sparkles, Baby, PawPrint,
+  ArrowRight, ChevronRight, HeartHandshake, BadgeCheck, Network,
 } from 'lucide-react';
-
-const FEATURES = [
-  { icon: Shield, title: 'Cooperative Control', desc: 'The cooperative remains the operational control layer' },
-  { icon: Users, title: 'Verified Workers', desc: 'Every worker is registered, verified and skill-profiled' },
-  { icon: Brain, title: 'Smart Matching', desc: 'AI-powered multi-factor worker recommendations' },
-  { icon: CreditCard, title: 'Digital Payments', desc: 'Secure UPI-compatible digital payments and invoicing' },
-  { icon: MapPin, title: 'Service Tracking', desc: 'Real-time booking tracking and status updates' },
-  { icon: BarChart3, title: 'Workforce Analytics', desc: 'Demand intelligence and workforce planning' },
-];
-
-const STEPS = [
-  { label: 'Request', desc: 'Submit your service requirement' },
-  { label: 'AI Matching', desc: 'Smart worker recommendation' },
-  { label: 'Cooperative Allocation', desc: 'Verified allocation by cooperative' },
-  { label: 'Service Delivery', desc: 'Track and complete service' },
-];
 
 const SERVICES = [
   { icon: Zap, name: 'Electrician', color: 'from-yellow-400 to-orange-500' },
@@ -42,158 +16,201 @@ const SERVICES = [
   { icon: PawPrint, name: 'Pet Care', color: 'from-purple-400 to-indigo-500' },
 ];
 
+const AUDIENCES = {
+  customer: {
+    title: 'For Customers',
+    points: ['Verified workers with skill profiles', 'Live tracking from request to invoice', 'Transparent ₹ pricing — no hidden cuts', 'Ratings that actually matter'],
+    cta: 'Request a service',
+    to: '/register',
+  },
+  worker: {
+    title: 'For Workers',
+    points: ['Keep 88% of every job', '2% of each job builds your welfare fund', 'Fair matching — no bidding wars', 'Ratings that bring repeat work'],
+    cta: 'Join as a worker',
+    to: '/register',
+  },
+  cooperative: {
+    title: 'For Cooperatives',
+    points: ['Command center for requests & allocations', 'AI-ranked candidates — you decide', 'Bulk workforce hiring in one requirement', 'Demand analytics & welfare oversight'],
+    cta: 'Run your society',
+    to: '/register',
+  },
+};
+
+function NetworkVisual() {
+  const nodes = [
+    { x: 60, y: 150, icon: '🏠', label: 'Customer' },
+    { x: 200, y: 60, icon: '🏛️', label: 'Cooperative' },
+    { x: 200, y: 240, icon: '🤖', label: 'AI assist' },
+    { x: 340, y: 150, icon: '👷', label: 'Worker' },
+  ];
+  return (
+    <svg viewBox="0 0 400 300" className="w-full max-w-md mx-auto" role="img" aria-label="Customer, cooperative, AI and worker connected">
+      <line x1="60" y1="150" x2="200" y2="60" stroke="rgba(255,255,255,.35)" strokeWidth="2" strokeDasharray="5 5" className="cc-flow-line" />
+      <line x1="60" y1="150" x2="200" y2="240" stroke="rgba(255,255,255,.35)" strokeWidth="2" strokeDasharray="5 5" className="cc-flow-line" />
+      <line x1="200" y1="60" x2="340" y2="150" stroke="rgba(255,255,255,.5)" strokeWidth="2.5" />
+      <line x1="200" y1="240" x2="340" y2="150" stroke="rgba(255,255,255,.35)" strokeWidth="2" strokeDasharray="5 5" className="cc-flow-line" />
+      {nodes.map((n) => (
+        <g key={n.label}>
+          <circle cx={n.x} cy={n.y} r="26" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.5)" strokeWidth="1.5" />
+          <text x={n.x} y={n.y + 7} textAnchor="middle" fontSize="20">{n.icon}</text>
+          <text x={n.x} y={n.y + 44} textAnchor="middle" fontSize="11" fill="rgba(255,255,255,.85)" fontWeight="600">{n.label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [audience, setAudience] = useState('customer');
+  const a = AUDIENCES[audience];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#f5f6fb]">
       {/* HERO */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-300 rounded-full blur-3xl" />
+      <section className="relative bg-gradient-to-br from-[#141233] via-[#2b2580] to-[#4f46e5] text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-16 left-1/4 w-72 h-72 bg-indigo-400 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-300 rounded-full blur-3xl" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-6 animate-fade-in">
-              CO-LAB CONNECT
-            </h1>
-            <p className="text-xl md:text-2xl font-medium text-blue-100 mb-3">
-              Cooperative-Owned Digital Workforce Operating System
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 md:py-20 grid md:grid-cols-2 gap-10 items-center">
+          <div className="cc-enter">
+            <p className="cc-eyebrow text-indigo-200">Cooperative-first workforce marketplace</p>
+            <h1 className="cc-h-display mt-2">Trusted Services.<br />Fair Opportunities.<br />Stronger Cooperatives.</h1>
+            <p className="text-indigo-100 mt-4 max-w-lg">
+              Connecting customers with verified workers through cooperative-powered workforce management.
             </p>
-            <p className="text-base md:text-lg text-blue-200 mb-10">
-              Connecting verified workers with households through cooperative governance
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => navigate('/register')}
-                className="px-8 py-3.5 bg-white text-indigo-700 font-semibold rounded-lg shadow-lg hover:bg-blue-50 transition-all duration-200 text-lg"
-              >
+            <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              <button onClick={() => navigate('/register')}
+                className="cc-btn px-8 py-3.5 bg-white text-indigo-700 font-bold rounded-xl shadow-lg text-base">
                 Get Started
               </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="px-8 py-3.5 border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-all duration-200 text-lg"
-              >
+              <button onClick={() => navigate('/login')}
+                className="cc-btn px-8 py-3.5 border-2 border-white/60 text-white font-semibold rounded-xl hover:bg-white/10 text-base">
                 Login
               </button>
             </div>
+            <div className="flex gap-5 mt-8 text-sm">
+              {[['88%', 'worker payout'], ['2%', 'welfare fund'], ['100%', 'verified workers']].map(([v, l]) => (
+                <div key={l}>
+                  <p className="text-2xl font-extrabold">{v}</p>
+                  <p className="text-indigo-200 text-xs">{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="cc-enter hidden md:block">
+            <NetworkVisual />
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+        <div className="h-10 bg-gradient-to-t from-[#f5f6fb] to-transparent" />
       </section>
 
-      {/* FEATURES */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why CO-LAB CONNECT?</h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              A platform built on cooperative principles for fair, verified, and smart workforce management
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FEATURES.map((f, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
-                  <f.icon className="text-indigo-600" size={24} />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
+      {/* FLOW STRIP */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 mb-4">
+        <div className="cc-glass rounded-2xl px-5 py-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-semibold text-gray-700">
+          {['Request', 'AI match', 'Cooperative allocates', 'Worker serves', 'Fair payout'].map((s, i, arr) => (
+            <span key={s} className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">{i + 1}</span>
+              {s}
+              {i < arr.length - 1 && <ArrowRight size={12} className="text-gray-300" />}
+            </span>
+          ))}
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <p className="text-gray-500 text-lg">Four simple steps to get your service delivered</p>
-          </div>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-            {STEPS.map((step, i) => (
-              <div key={i} className="flex items-center gap-6">
-                <div className="flex flex-col items-center text-center max-w-[180px]">
-                  <div className="w-14 h-14 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xl mb-3">
-                    {i + 1}
-                  </div>
-                  <h4 className="font-semibold text-gray-900 mb-1">{step.label}</h4>
-                  <p className="text-sm text-gray-500">{step.desc}</p>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <ArrowRight className="text-indigo-300 hidden md:block flex-shrink-0" size={28} />
-                )}
+      {/* WHY */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <h2 className="text-3xl font-extrabold text-gray-900 text-center">Why CO-LAB CONNECT?</h2>
+        <p className="text-gray-500 text-center mt-2 mb-10">Built on cooperative principles — not middleman commissions</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[
+            { icon: Shield, title: 'Cooperative Control', desc: 'The cooperative remains the operational control layer — AI never overrides.' },
+            { icon: BadgeCheck, title: 'Verified Workers', desc: 'Registered, skill-profiled and background-checked workforce.' },
+            { icon: Brain, title: 'Explainable Matching', desc: 'Every recommendation shows its reasons: skill, distance, fairness.' },
+            { icon: CreditCard, title: 'Honest Money', desc: '₹500 → ₹50 society + ₹10 welfare + ₹440 worker. Computed server-side.' },
+            { icon: MapPin, title: 'Live Tracking', desc: 'Request to invoice status, visible to customer, worker and society.' },
+            { icon: HeartHandshake, title: 'Worker Welfare', desc: '2% of every job builds insurance and support funds.' },
+          ].map((f) => (
+            <div key={f.title} className="cc-card cc-card-hover cc-glass rounded-2xl p-6">
+              <div className="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center mb-3">
+                <f.icon className="text-white" size={22} />
               </div>
+              <h3 className="font-bold text-gray-900">{f.title}</h3>
+              <p className="text-sm text-gray-500 mt-1 leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* AUDIENCES */}
+      <section className="bg-white border-y border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="flex flex-wrap gap-2 justify-center mb-8">
+            {Object.entries(AUDIENCES).map(([k, v]) => (
+              <button key={k} onClick={() => setAudience(k)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${audience === k ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                {v.title}
+              </button>
             ))}
+          </div>
+          <div key={audience} className="cc-enter max-w-2xl mx-auto text-center">
+            <h3 className="text-2xl font-extrabold text-gray-900">{a.title}</h3>
+            <ul className="mt-4 space-y-2.5 text-left inline-block">
+              {a.points.map((p) => (
+                <li key={p} className="flex items-start gap-2 text-gray-600 text-sm">
+                  <span className="text-emerald-500 font-bold">✓</span>{p}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6">
+              <button onClick={() => navigate(a.to)}
+                className="cc-btn px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl">
+                {a.cta} <ChevronRight size={16} className="inline" />
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* SERVICES */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Services</h2>
-            <p className="text-gray-500 text-lg">Trusted professionals for every household need</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
-            {SERVICES.map((s, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                onClick={() => navigate('/register')}
-              >
-                <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mx-auto mb-3`}>
-                  <s.icon className="text-white" size={28} />
-                </div>
-                <h4 className="font-semibold text-gray-900 text-sm">{s.name}</h4>
-              </div>
-            ))}
-          </div>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <h2 className="text-3xl font-extrabold text-gray-900 text-center">One network, every household need</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-8">
+          {SERVICES.map((s) => (
+            <button key={s.name} onClick={() => navigate('/register')}
+              className="cc-card cc-card-hover bg-white rounded-2xl p-5 text-center border border-gray-100">
+              <span className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mx-auto mb-2.5`}>
+                <s.icon className="text-white" size={26} />
+              </span>
+              <span className="font-bold text-gray-900 text-sm">{s.name}</span>
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-blue-600 to-indigo-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to get started?</h2>
-          <p className="text-blue-100 text-lg mb-8">
-            Join the cooperative and experience verified, trustworthy service delivery
-          </p>
-          <button
-            onClick={() => navigate('/register')}
-            className="px-10 py-4 bg-white text-indigo-700 font-bold rounded-lg shadow-lg hover:bg-blue-50 transition-all duration-200 text-lg inline-flex items-center gap-2"
-          >
-            Register Now <ChevronRight size={20} />
+      {/* TRUST + CTA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <div className="rounded-3xl bg-gradient-to-br from-emerald-700 to-teal-600 text-white p-8 sm:p-12 text-center shadow-xl">
+          <Network size={28} className="mx-auto mb-3 text-emerald-100" />
+          <h2 className="text-2xl sm:text-3xl font-extrabold">AI recommends. The cooperative decides.</h2>
+          <p className="text-emerald-50 mt-2 max-w-xl mx-auto text-sm">Join 33+ verified workers earning 88% of every job — with welfare on top.</p>
+          <button onClick={() => navigate('/register')}
+            className="cc-btn mt-6 px-10 py-3.5 bg-white text-emerald-700 font-bold rounded-xl text-base">
+            Register Now
           </button>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-1">CO-LAB CONNECT</h3>
-              <p className="text-sm">Cooperative-Owned Digital Workforce Operating System</p>
-            </div>
-            <div className="flex gap-6 text-sm">
-              <span className="hover:text-white cursor-pointer transition-colors">About</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Services</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Contact</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-            </div>
+      <footer className="bg-[#141233] text-gray-400 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <p className="text-lg font-extrabold text-white">CO-LAB CONNECT</p>
+            <p className="text-xs">Trusted Services. Fair Opportunities. Stronger Cooperatives.</p>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} CO-LAB CONNECT. All rights reserved.</p>
-          </div>
+          <p className="text-xs">&copy; {new Date().getFullYear()} CO-LAB CONNECT. All rights reserved.</p>
         </div>
       </footer>
     </div>

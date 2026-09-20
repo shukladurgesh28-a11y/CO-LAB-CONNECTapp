@@ -530,8 +530,8 @@ export default function JobDetail() {
 
       {/* Confirmation Dialog */}
       {confirmAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+        <div className="cc-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="cc-pop bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-yellow-600" />
@@ -564,8 +564,8 @@ export default function JobDetail() {
 
       {/* Add Material Modal */}
       {showMaterialModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="cc-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="cc-pop bg-white rounded-xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Add Material</h3>
               <button

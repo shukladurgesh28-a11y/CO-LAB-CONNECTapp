@@ -1,0 +1,86 @@
+/* CO-LAB CONNECT design system — brand tokens, surfaces, role themes.
+ * One system, five role experiences. All roles share type scale, radii,
+ * shadows and motion; each role gets its own accent + hero treatment.
+ */
+
+:root {
+  --cc-navy-950: #141233;
+  --cc-navy-900: #1e1b4b;
+  --cc-indigo-600: #4f46e5;
+  --cc-indigo-500: #6366f1;
+  --cc-teal-500: #14b8a6;
+  --cc-gold-500: #f59e0b;
+  --cc-emerald-500: #10b981;
+  --cc-page-bg: #f4f5fb;
+  --cc-card: #ffffff;
+  --cc-ink: #111827;
+  --cc-muted: #6b7280;
+  --cc-line: #e7e9f4;
+  --cc-radius-lg: 1rem;
+  --cc-radius-xl: 1.25rem;
+  --cc-shadow-card: 0 1px 2px rgba(20, 18, 51, 0.05), 0 8px 24px -12px rgba(20, 18, 51, 0.18);
+  --cc-shadow-pop: 0 12px 32px -8px rgba(20, 18, 51, 0.28);
+}
+
+/* Layered page background: light neutral mesh, never flat white. */
+.cc-page {
+  background:
+    radial-gradient(1100px 320px at 12% -80px, rgba(99, 102, 241, 0.1), transparent 60%),
+    radial-gradient(900px 300px at 95% 0px, rgba(20, 184, 166, 0.07), transparent 60%),
+    linear-gradient(180deg, #f7f8fd 0%, var(--cc-page-bg) 320px);
+  min-height: 100%;
+}
+
+/* Glass content cards */
+.cc-glass {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--cc-line);
+  box-shadow: var(--cc-shadow-card);
+}
+
+/* Role accent tokens (set via data-role on the shell root) */
+.cc-shell[data-role='customer'] { --cc-accent: #4f46e5; --cc-accent-soft: #eef0ff; }
+.cc-shell[data-role='worker'] { --cc-accent: #059669; --cc-accent-soft: #e7f7f0; }
+.cc-shell[data-role='cooperative_admin'] { --cc-accent: #2563eb; --cc-accent-soft: #e8f0fe; }
+.cc-shell[data-role='federation_admin'] { --cc-accent: #7c3aed; --cc-accent-soft: #f1eafe; }
+.cc-shell[data-role='platform_admin'] { --cc-accent: #0f172a; --cc-accent-soft: #e8eaf0; }
+
+/* Dark command sidebar for ops roles */
+.cc-side-dark {
+  background: linear-gradient(180deg, #17153a 0%, #100f28 100%);
+  color: #c7d2fe;
+}
+.cc-side-dark .cc-nav-group {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8b93b8;
+}
+.cc-side-dark a[data-active='true'] {
+  background: rgba(99, 102, 241, 0.22);
+  color: #fff;
+}
+
+/* Light sidebar */
+.cc-side-light { background: rgba(255, 255, 255, 0.9); }
+.cc-side-light .cc-nav-group {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9aa1b8;
+}
+
+/* Type scale helpers */
+.cc-h-display { font-size: clamp(1.9rem, 3.4vw, 2.9rem); font-weight: 800; letter-spacing: -0.02em; }
+.cc-h-section { font-size: 1.125rem; font-weight: 700; }
+.cc-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* Data tables that collapse to cards on mobile */
+@media (max-width: 767px) {
+  .cc-table-scroll { overflow-x: auto; }
+  .cc-table-scroll table { min-width: 640px; }
+}
+
+/* Focus visibility (pairs with motion focus rings) */
+.cc-focusable:focus-visible { outline: 2px solid var(--cc-indigo-600); outline-offset: 2px; }

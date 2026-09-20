@@ -79,7 +79,7 @@ export default function Login() {
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-blue-300/30 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute -bottom-28 -left-20 w-80 h-80 bg-amber-200/40 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute top-1/3 left-1/4 w-40 h-40 bg-emerald-200/30 rounded-full blur-xl pointer-events-none" />
-        <div className="relative">
+        <div className="relative cc-enter">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white rounded-2xl shadow flex items-center justify-center">
               <span className="text-blue-700 font-black text-lg">CC</span>
@@ -110,9 +110,9 @@ export default function Login() {
       </div>
 
       {/* Login form */}
-      <div className="flex-1 bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 bg-gradient-to-br from-[#141233] via-[#2b2580] to-[#4f46e5] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="cc-enter bg-white rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900">CO-LAB CONNECT</h1>
             <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
@@ -197,15 +197,17 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 rounded-xl border border-indigo-100 bg-indigo-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 mb-2">Demo accounts</p>
-            <div className="space-y-2 text-sm text-gray-700">
-              <div><span className="font-medium">Customer:</span> customer@demo.com / CoLab!Demo2026</div>
-              <div><span className="font-medium">Worker:</span> worker@demo.com / CoLab!Demo2026</div>
-              <div><span className="font-medium">Co-op admin:</span> coop@demo.com / CoLab!Demo2026</div>
-              <div><span className="font-medium">Federation admin:</span> federation@demo.com / CoLab!Demo2026</div>
+          <details className="mt-6 rounded-xl border border-indigo-100 bg-indigo-50/60 overflow-hidden">
+            <summary className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-indigo-700 cursor-pointer hover:bg-indigo-50">
+              Demo accounts & passwords
+            </summary>
+            <div className="px-4 pb-4 space-y-1.5 text-[13px] text-gray-700 font-mono">
+              <div>customer@demo.com / CoLab!Demo2026</div>
+              <div>worker@demo.com / CoLab!Demo2026</div>
+              <div>coop@demo.com / CoLab!Demo2026</div>
+              <div>federation@demo.com / CoLab!Demo2026</div>
             </div>
-          </div>
+          </details>
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Don&apos;t have an account?{' '}

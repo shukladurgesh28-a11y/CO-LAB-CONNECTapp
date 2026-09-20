@@ -293,8 +293,8 @@ export default function Skills() {
 
       {/* Add Skill Modal */}
       {showSkillModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="cc-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="cc-pop bg-white rounded-xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Add Skill</h3>
               <button
@@ -371,8 +371,8 @@ export default function Skills() {
 
       {/* Add Certification Modal */}
       {showCertModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="cc-fade fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="cc-pop bg-white rounded-xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900">Add Certification</h3>
               <button

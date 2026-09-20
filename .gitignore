@@ -77,4 +77,13 @@ desktop.ini
 logs/
 tmp/
 temp/
-.cache/
+.cache/
+
+# ========================
+# GENERATED EXPORTS (never push)
+# ========================
+colabconnect-source-export.txt
+*-source-export.txt
+project-tree.txt
+/package.json
+/package-lock.json
