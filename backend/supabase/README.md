@@ -4,7 +4,7 @@ The SQL migration in `schema.sql` creates the CO-LAB CONNECT PostgreSQL schema, 
 
 ## 1. Create the project
 
-The configured project is `https://scadpoxbwpqdhnoofgsh.supabase.co`.
+The configured project is `https://YOUR-PROJECT-REF.supabase.co`.
 
 In the Supabase dashboard:
 
@@ -18,9 +18,9 @@ In the Supabase dashboard:
 Set these values in `backend/.env`:
 
 ```dotenv
-SUPABASE_URL=https://scadpoxbwpqdhnoofgsh.supabase.co
+SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
 SUPABASE_PUBLISHABLE_KEY=<publishable-or-anon-key>
-SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.scadpoxbwpqdhnoofgsh.supabase.co:5432/postgres
+SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.YOUR-PROJECT-REF.supabase.co:5432/postgres
 ```
 
 The Flask API uses `SUPABASE_DB_URL` first, then `NEON_DATABASE_URL`, then `DATABASE_URL`. Keep `SUPABASE_SERVICE_ROLE_KEY` server-only and do not expose it to React.
@@ -62,5 +62,5 @@ The RLS policies resolve `auth.uid()` through `users.auth_user_id` and then appl
 ## Hosted project URL
 
 ```text
-https://scadpoxbwpqdhnoofgsh.supabase.co
+https://YOUR-PROJECT-REF.supabase.co
 ```
