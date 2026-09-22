@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Loader2, Scan } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import QRScannerModal from '../../components/QRScannerModal';
@@ -13,8 +14,17 @@ const CountNum = ({ value, money }) => (
 );
 
 const TABS = [
-  'Overview', 'Requests', 'AI Assistant', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
+  'Overview', 'Organization', 'Requests', 'AI Assistant', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
   'Payments', 'Welfare', 'Disputes', 'Services', 'Analytics', 'Notifications', 'Audit',
+];
+
+const ORG_RULES = [
+  { n: '1', t: 'Federation sits on top', d: 'A federation oversees many societies (co-ops). It sees network-wide demand, workforce and revenue — it never allocates a single job directly.' },
+  { n: '2', t: 'Society = Co-op (same thing)', d: '“Society” and “Cooperative” are the same registry (cooperatives table). A society owns its verified workers, reviews customer requests in its area, and allocates jobs.' },
+  { n: '3', t: 'Worker belongs to one society', d: 'Every worker row carries one cooperative_id. Verification, availability and workload are managed by that society.' },
+  { n: '4', t: 'Request flows down, never sideways', d: 'Customer request → lands in one society → AI ranks that society’s workers → society (or worker direct-accept) allocates → booking → payout. A society never touches another society’s workers.' },
+  { n: '5', t: 'Money is computed once, server-side', d: 'Commission 10% + welfare 2% on every job. Worker payout = total − commission − welfare. The panel only displays backend numbers.' },
+  { n: '6', t: 'One panel, three manager views', d: 'Platform admin sees everything. Federation managers see their societies. Society managers see their workers and queue. Same tabs, scoped data.' },
 ];
 
 const TabError = ({ message, onRetry }) => (
@@ -65,7 +75,14 @@ const Table = ({ head, children }) => (
   </div>
 );
 
+const ROLE_BADGE = {
+  platform_admin: 'Platform admin — full access',
+  federation_admin: 'Federation manager — network view',
+  cooperative_admin: 'Society (Co-op) manager — own workforce',
+};
+
 export default function AdminPanel() {
+  const { user } = useAuth();
   const [tab, setTab] = useState('Overview');
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
@@ -136,6 +153,7 @@ export default function AdminPanel() {
   }, []);
 
   useEffect(() => { loadTab(tab); }, [tab, loadTab]);
+  useEffect(() => { if (tab === 'Organization') { loadTab('Federations'); } }, [tab, loadTab]);
 
   const mutate = async (key, fn, okMsg) => {
     setBusy(key);
@@ -207,10 +225,10 @@ export default function AdminPanel() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-semibold text-purple-200">
-              <ShieldCheck className="w-3.5 h-3.5" /> Platform Administration — central management
+              <ShieldCheck className="w-3.5 h-3.5" /> {ROLE_BADGE[user?.role] || 'Administration — central management'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold mt-2">Admin Panel</h1>
-            <p className="text-purple-200 text-sm mt-1">Federations, societies, workers, money, disputes — one place.</p>
+            <p className="text-purple-200 text-sm mt-1">Federations, societies (co-ops), workers, money, disputes — one place.</p>
           </div>
           <button onClick={() => setScannerOpen(true)}
             className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold rounded-xl">
@@ -248,6 +266,42 @@ export default function AdminPanel() {
           <Card label="Revenue" value={<CountNum value={overview.revenue_total} money />} sub={`Commission ₹${Number(overview.commission_total).toLocaleString('en-IN')}`} />
           <Card label="Payouts" value={<CountNum value={overview.payouts_total} money />} />
           <Card label="Welfare fund" value={<CountNum value={overview.welfare_fund} money />} sub={`${overview.open_disputes} open disputes`} />
+        </div>
+      )}
+
+      {tab === 'Organization' && (
+        <div className="space-y-4">
+          <Section title="How Federation › Society (Co-op) › Workers work">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold mb-5">
+              {['Federation', 'Society = Co-op', 'Workers'].map((s, i, arr) => (
+                <span key={s} className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-purple-700 text-white">{s}</span>
+                  {i < arr.length - 1 && <span className="text-gray-300">→</span>}
+                </span>
+              ))}
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {ORG_RULES.map((r) => (
+                <div key={r.n} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                  <p className="text-[11px] font-black text-purple-700">RULE {r.n}</p>
+                  <p className="text-sm font-bold text-gray-900 mt-1">{r.t}</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">{r.d}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section title="Live hierarchy (from this database)">
+            <Table head={['Federation', 'Societies', 'Workers']}>
+              {(feds.length ? feds : [{ id: 0, name: 'All federations', society_count: overview?.societies_total, worker_count: overview?.workers_total }]).map((f) => (
+                <tr key={f.id}>
+                  <td className="py-2.5 px-3 font-semibold text-gray-900">{f.name}</td>
+                  <td className="py-2.5 px-3">{f.society_count ?? overview?.societies_total ?? '—'}</td>
+                  <td className="py-2.5 px-3">{f.worker_count ?? overview?.workers_total ?? '—'}</td>
+                </tr>
+              ))}
+            </Table>
+            <p className="text-[11px] text-gray-400 mt-2">Society = Cooperative (same registry). Workers carry one cooperative_id; requests land in one society.</p>
+          </Section>
         </div>
       )}
 

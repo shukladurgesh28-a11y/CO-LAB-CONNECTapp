@@ -31,9 +31,7 @@ export default function Login() {
   const redirectForRole = (role) => {
     const r = role?.toLowerCase();
     if (r === 'worker') navigate('/worker/dashboard');
-    else if (r === 'cooperative_admin') navigate('/cooperative/dashboard');
-    else if (r === 'federation_admin') navigate('/federation/dashboard');
-    else if (r === 'platform_admin') navigate('/admin');
+    else if (['cooperative_admin', 'federation_admin', 'platform_admin'].includes(r)) navigate('/admin');
     else navigate('/customer/dashboard');
   };
 

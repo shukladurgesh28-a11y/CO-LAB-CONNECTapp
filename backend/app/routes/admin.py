@@ -1,7 +1,10 @@
-"""Central platform management APIs (Admin Panel, platform_admin only).
+"""Central platform management APIs (single unified Admin Panel).
 
-Every endpoint here reads the SAME database and models as the rest of
-CO-LAB CONNECT. Mutations append to the audit trail (module 12).
+Org model: Federation > Society (Co-op, same `cooperatives` table) > Workers.
+One panel serves all org roles: platform_admin (full platform), federation_admin
+(scoped to their federation), cooperative_admin (scoped to their societies).
+Society == Cooperative: the `cooperatives` table IS the society registry; the
+`societies` SQL view is a read alias. Mutations append to the audit trail.
 """
 
 from datetime import datetime, timezone
@@ -29,12 +32,16 @@ from app.services.opencode_assistant import ask_opencode, opencode_configured
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
 
+ORG_ADMIN_ROLES = ("platform_admin", "federation_admin", "cooperative_admin")
+
+
 def _platform():
+    """Any org admin (platform / federation / society manager). Kept for compat."""
     try:
         user = User.query.get(int(get_jwt_identity()))
     except (ValueError, TypeError):
         return None
-    if not user or user.role != "platform_admin":
+    if not user or user.role not in ORG_ADMIN_ROLES:
         return None
     return user
 
@@ -42,7 +49,7 @@ def _platform():
 def _require_platform():
     user = _platform()
     if not user:
-        return None, error_response("Platform admin access required", 403)
+        return None, error_response("Admin access required (platform / federation / society manager)", 403)
     return user, None
 
 
