@@ -32,11 +32,11 @@ const daypart = () => {
   return 'Good evening';
 };
 
-function Reveal({ children, delay = 0 }) {
+function Reveal({ children, delay = 0, className = '' }) {
   const reduce = usePrefersReducedMotion();
-  if (reduce) return <>{children}</>;
+  if (reduce) return <div className={className}>{children}</div>;
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay, ease: EASE.out }}>
+    <motion.div className={className} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay, ease: EASE.out }}>
       {children}
     </motion.div>
   );
@@ -137,8 +137,8 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* hero visual — 2–3 small floating cards, minimal */}
-            <div className="relative w-full max-w-[420px] mx-auto lg:mx-0">
+            {/* hero visual — 2–3 small floating cards, minimal — contained */}
+            <div className="relative w-full max-w-[420px] mx-auto lg:mx-0 isolate">
               <div className="absolute -inset-3 bg-gradient-to-br from-indigo-400/15 to-teal-300/10 blur-2xl rounded-[20px] pointer-events-none" />
               {/* main card */}
               <motion.div initial={reduce?false:{opacity:0,y:12,scale:0.98}} animate={{opacity:1,y:0,scale:1}} transition={{duration:0.5, delay:0.15, ease:EASE.out}}
@@ -162,22 +162,23 @@ export default function Dashboard() {
                 </div>
               </motion.div>
 
-              {/* floating AI */}
+              {/* floating AI — generic, no specific worker names to avoid mixing perception */}
               <motion.div initial={reduce?false:{opacity:0,y:10,scale:0.96}} animate={{opacity:1,y:0,scale:1}} transition={{duration:0.45, delay:0.3, ease:EASE.out}}
                 className="absolute -left-2 sm:-left-4 -top-6 w-[148px] rounded-2xl bg-white shadow-xl border border-slate-200 p-2.5 -rotate-[1deg]">
                 <p className="text-[10px] font-extrabold tracking-widest text-indigo-600">AI MATCHING</p>
                 <div className="mt-2 space-y-1">
-                  <div className="flex justify-between rounded-lg bg-indigo-600 text-white px-2 py-1 text-xs font-bold"><span>A. Verma</span><span>92%</span></div>
-                  <div className="flex justify-between rounded-lg bg-slate-50 border border-slate-200 px-2 py-1 text-xs"><span className="font-semibold text-slate-700">S. Khan</span><span className="font-bold text-slate-500">87%</span></div>
+                  <div className="flex justify-between rounded-lg bg-indigo-600 text-white px-2 py-1 text-xs font-bold"><span>Top Match</span><span>92%</span></div>
+                  <div className="flex justify-between rounded-lg bg-slate-50 border border-slate-200 px-2 py-1 text-xs"><span className="font-semibold text-slate-700">2nd Match</span><span className="font-bold text-slate-500">87%</span></div>
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">Explainable ranking</p>
               </motion.div>
 
-              {/* floating worker */}
+              {/* floating worker — generic */}
               <motion.div initial={reduce?false:{opacity:0,y:10,scale:0.96}} animate={{opacity:1,y:0,scale:1}} transition={{duration:0.45, delay:0.38, ease:EASE.out}}
                 className="absolute -right-2 sm:-right-3 top-16 w-[142px] rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg p-2.5 rotate-[0.8deg]">
                 <p className="text-[10px] font-bold tracking-widest text-white/70">WORKER ALLOCATED</p>
-                <p className="text-xs font-extrabold mt-1">A. Verma</p>
-                <p className="text-[11px] text-white/80">Electrician • 4.8 ★</p>
+                <p className="text-xs font-extrabold mt-1">Verified Worker</p>
+                <p className="text-[11px] text-white/80">Cooperative • 4.8 ★</p>
               </motion.div>
             </div>
           </div>
@@ -247,10 +248,10 @@ export default function Dashboard() {
       </Reveal>
 
       {/* lower grid — bookings | activity + actions + support */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-6 items-start">
         {/* My Bookings — 7 cols */}
         <Reveal delay={0.06} className="col-span-12 lg:col-span-7">
-          <section className="rounded-[20px] bg-white border border-slate-200 p-5 sm:p-6 h-full">
+          <section className="rounded-[20px] bg-white border border-slate-200 p-5 sm:p-6 h-full w-full">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-slate-900">My Bookings</h3>
               <Link to="/customer/bookings" className="text-sm font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">View All <ArrowRight size={14} /></Link>
