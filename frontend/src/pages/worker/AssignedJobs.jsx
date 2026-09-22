@@ -61,6 +61,9 @@ export default function AssignedJobs() {
   const [updatingId, setUpdatingId] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
+  const [availableRequests, setAvailableRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [acceptingId, setAcceptingId] = useState(null);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -75,6 +78,34 @@ export default function AssignedJobs() {
     }
   }, []);
 
+  const fetchAvailableRequests = useCallback(async () => {
+    try {
+      setLoadingRequests(true);
+      const res = await api.get('/api/requests/', { params: { status: 'pending', limit: 50 } });
+      const data = res.data?.data || res.data?.requests || res.data || [];
+      // Filter to only truly pending and not already allocated
+      const pending = Array.isArray(data) ? data.filter(r => r.status === 'pending' && !r.allocated_worker_id) : [];
+      setAvailableRequests(pending);
+    } catch {
+      setAvailableRequests([]);
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
+
+  const handleAcceptRequest = async (requestId) => {
+    setAcceptingId(requestId);
+    try {
+      await api.post(`/api/requests/${requestId}/accept`);
+      toast.success('Request accepted! Booking created and visible to admin');
+      await Promise.all([fetchBookings(), fetchAvailableRequests()]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept request');
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
   const fetchAssignments = useCallback(async () => {
     try {
       const res = await api.get('/api/workforce/my-assignments');
@@ -86,8 +117,9 @@ export default function AssignedJobs() {
 
   useEffect(() => {
     fetchBookings();
+    fetchAvailableRequests();
     fetchAssignments();
-  }, [fetchBookings, fetchAssignments]);
+  }, [fetchBookings, fetchAvailableRequests, fetchAssignments]);
 
   const respondAssignment = async (allocId, decision) => {
     setRespondingId(allocId);
@@ -103,8 +135,11 @@ export default function AssignedJobs() {
   };
 
   useRealtimeSync({
-    tables: ['bookings', 'allocations', 'notifications'],
-    onChange: fetchBookings,
+    tables: ['bookings', 'allocations', 'notifications', 'service_requests'],
+    onChange: () => {
+      fetchBookings();
+      fetchAvailableRequests();
+    },
   });
 
   const handleStatusUpdate = async (bookingId, newStatus, e) => {
@@ -143,6 +178,45 @@ export default function AssignedJobs() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Assigned Jobs</h1>
 
+      {/* Available Customer Requests — worker can directly accept */}
+      <div className="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Available Customer Requests
+          </h2>
+          <span className="text-xs font-bold text-indigo-600 bg-white px-2.5 py-1 rounded-full border border-indigo-200">
+            {loadingRequests ? '...' : `${availableRequests.length} pending`}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Customer requests in your cooperative — accept directly to create a booking visible to admin.</p>
+        {loadingRequests ? (
+          <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading requests...</div>
+        ) : availableRequests.length === 0 ? (
+          <p className="text-sm text-gray-500 bg-white rounded-lg p-3 border border-gray-100 text-center">No pending customer requests in your area right now.</p>
+        ) : (
+          <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+            {availableRequests.map((r) => (
+              <div key={r.id} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{r.service_name || `Service #${r.service_id}`}</p>
+                  <p className="text-xs text-gray-500 truncate">{r.location_address || 'Location'} • {r.preferred_date || ''} {r.urgency === 'urgent' ? '• Urgent' : ''}</p>
+                  <p className="text-xs text-gray-400 truncate">Customer #{r.customer_id} • {r.description?.slice(0, 60) || ''}</p>
+                </div>
+                <button
+                  onClick={() => handleAcceptRequest(r.id)}
+                  disabled={acceptingId === r.id}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-bold disabled:opacity-50"
+                >
+                  {acceptingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  Accept Directly
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
         {STATUS_TABS.map((tab) => (
@@ -179,7 +253,7 @@ export default function AssignedJobs() {
           <h3 className="text-lg font-medium text-gray-900 mb-1">No jobs found</h3>
           <p className="text-gray-500">
             {activeTab === 'all'
-              ? "You don't have any assigned jobs yet. New customer requests appear here only after your society allocates them to you — unassigned requests stay with the admin."
+              ? "You don't have any assigned jobs yet. Accept a request from Available Customer Requests above — it will instantly create a booking visible to you and admin."
               : `No ${STATUS_LABELS[activeTab]?.toLowerCase()} jobs.`}
           </p>
         </div>

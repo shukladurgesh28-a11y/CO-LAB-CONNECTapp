@@ -175,6 +175,14 @@ def list_requests():
 
         if user.role == "customer":
             query = ServiceRequest.query.filter_by(customer_id=user_id)
+        elif user.role == "worker":
+            # Worker sees pending requests in their cooperative (so they can directly accept)
+            worker = Worker.query.filter_by(user_id=user_id).first()
+            if worker and worker.cooperative_id:
+                query = ServiceRequest.query.filter_by(cooperative_id=worker.cooperative_id)
+            else:
+                # Fallback: show all pending requests for demo
+                query = ServiceRequest.query
         elif user.role == "cooperative_admin":
             worker = Worker.query.filter_by(user_id=user_id).first()
             cooperative_id = data.get("cooperative_id") if (data := request.args) else None
@@ -205,6 +213,108 @@ def list_requests():
         )
     except Exception as e:
         return error_response(f"Failed to retrieve requests: {str(e)}", 500)
+
+
+@requests_bp.route("/<int:request_id>/accept", methods=["POST"])
+@jwt_required()
+def accept_request(request_id):
+    """Worker directly accepts a customer request — creates allocation+booking and is visible to admin."""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user:
+            return error_response("User not found", 404)
+        if user.role not in ("worker", "platform_admin", "federation_admin"):
+            return error_response("Only workers can directly accept requests", 403)
+        worker = Worker.query.filter_by(user_id=user_id).first()
+        if not worker:
+            return error_response("Worker profile not found", 404)
+        if worker.verification_status != "verified":
+            return error_response("Worker not verified", 403)
+
+        sr = ServiceRequest.query.get(request_id)
+        if not sr:
+            return error_response("Request not found", 404)
+        if sr.status not in ("pending", "recommended"):
+            return error_response(f"Request already {sr.status}, cannot accept", 400)
+        if sr.allocated_worker_id:
+            return error_response("Request already allocated", 400)
+
+        # Create allocation (worker claims it)
+        alloc = Allocation(
+            request_id=sr.id,
+            worker_id=worker.id,
+            cooperative_id=sr.cooperative_id,
+            admin_user_id=worker.user_id,
+            recommendation_score=100.0,
+            allocation_reason="Worker directly accepted customer request (bypassing cooperative queue for demo)",
+            status="accepted",
+            allocated_at=datetime.now(timezone.utc),
+        )
+        db.session.add(alloc)
+        db.session.flush()
+
+        sr.allocated_worker_id = worker.id
+        sr.allocation_id = alloc.id
+        sr.status = "allocated"
+        sr.updated_at = datetime.now(timezone.utc)
+
+        # Update or create booking for this request
+        booking = Booking.query.filter_by(request_id=sr.id).first()
+        if booking:
+            booking.worker_id = worker.id
+            booking.allocation_id = alloc.id
+            booking.status = "accepted"
+            booking.updated_at = datetime.now(timezone.utc)
+        else:
+            booking = Booking(
+                request_id=sr.id,
+                customer_id=sr.customer_id,
+                cooperative_id=sr.cooperative_id,
+                worker_id=worker.id,
+                allocation_id=alloc.id,
+                service_date=sr.preferred_date,
+                time_start=sr.preferred_time_start,
+                time_end=sr.preferred_time_end,
+                status="accepted",
+                total_amount=float(sr.service.base_price) if sr.service and sr.service.base_price else 500.0,
+                final_amount=float(sr.service.base_price) if sr.service and sr.service.base_price else 500.0,
+                material_charges=0.0,
+            )
+            db.session.add(booking)
+            db.session.flush()
+
+        # Notify customer and admin
+        try:
+            NotificationService().send_notification(
+                sr.customer_id,
+                "Request accepted",
+                f"Worker {worker.name} accepted your {sr.service.name if sr.service else 'service'} request.",
+                "service_request",
+                "service_request",
+                sr.id,
+            )
+            if sr.cooperative and sr.cooperative.admin_user_id:
+                NotificationService().send_notification(
+                    sr.cooperative.admin_user_id,
+                    "Request claimed",
+                    f"Worker {worker.name} directly accepted request #{sr.id}.",
+                    "service_request",
+                    "service_request",
+                    sr.id,
+                )
+        except Exception:
+            pass
+
+        db.session.commit()
+        resp = sr.to_dict()
+        resp["booking_id"] = booking.id
+        resp["booking"] = booking.to_dict()
+        resp["allocation"] = alloc.to_dict() if hasattr(alloc, "to_dict") else {"id": alloc.id, "worker_id": worker.id}
+        return success_response(resp, "Request accepted successfully — booking created and visible to admin", 200)
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"Failed to accept request: {str(e)}", 500)
 
 
 @requests_bp.route("/<int:request_id>", methods=["GET"])
