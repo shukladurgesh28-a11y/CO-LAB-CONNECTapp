@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Link, useLocation, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useLanguage } from './i18n/LanguageContext';
 import { lazy, Suspense, useState } from 'react';
@@ -120,14 +120,14 @@ function navForRole(role, t) {
         { title: 'Workspace', links: [
           { to: '/customer/dashboard', icon: '🏠', label: t('nav.dashboard') },
           { to: '/customer/services', icon: '🔧', label: t('nav.services') },
-          { to: '/customer/request', icon: '📝', label: t('customer.requestService') },
+          { to: '/customer/request', icon: '📝', label: 'My Requests' },
           { to: '/customer/bookings', icon: '📅', label: t('nav.bookings') },
-          { to: '/customer/history', icon: '📜', label: t('nav.history') },
+          { to: '/customer/history', icon: '💳', label: 'Wallet & Payments' },
         ]},
         { title: 'Account', links: [
-          { to: '/scanner', icon: '📷', label: 'QR Scanner' },
-          { to: '/customer/disputes', icon: '⚠️', label: 'Disputes' },
+          { to: '/customer/disputes', icon: '⚠️', label: 'Notifications' },
           { to: '/customer/profile', icon: '👤', label: t('nav.profile') },
+          { to: '/scanner', icon: '📷', label: 'QR Scanner' },
         ]},
       ];
     case 'worker':
@@ -231,9 +231,11 @@ function Layout() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
+  const nav = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cc-sidebar') === 'collapsed');
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
   const role = user?.role || 'customer';
   const meta = ROLE_META[role] || ROLE_META.customer;
   const opsRole = ['cooperative_admin', 'federation_admin', 'platform_admin'].includes(role);
@@ -281,6 +283,29 @@ function Layout() {
             ))}
           </nav>
         </div>
+        {role === 'customer' && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = searchQ.trim();
+              nav(q ? `/customer/services?search=${encodeURIComponent(q)}` : '/customer/services');
+            }}
+            className="hidden md:flex flex-1 max-w-[420px] mx-3"
+            role="search"
+            aria-label="Search services"
+          >
+            <div className="relative w-full">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">⌕</span>
+              <input
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder="Search services, workers, requests..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition"
+                aria-label="Search services, workers, requests"
+              />
+            </div>
+          </form>
+        )}
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             to="/scanner"
