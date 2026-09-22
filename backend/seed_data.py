@@ -63,8 +63,23 @@ def seed():
         # so drop everything first, then build a clean, consistent dataset.
         db.session.remove()
         gc.collect()
-        db.session.execute(text("PRAGMA foreign_keys=OFF"))
-        db.drop_all()
+        # Handle Postgres circular FK (allocations <-> service_requests) vs SQLite
+        from config import get_database_uri as _gdu
+        _uri = _gdu()
+        is_pg = 'postgres' in _uri and 'hpvnqvnhoigcepgrcdek' in _uri
+        if is_pg:
+            try:
+                db.session.execute(text("DROP SCHEMA public CASCADE; CREATE SCHEMA public;"))
+                db.session.commit()
+            except Exception as e:
+                print("drop schema failed", e)
+                db.session.rollback()
+        else:
+            try:
+                db.session.execute(text("PRAGMA foreign_keys=OFF"))
+            except Exception:
+                pass
+            db.drop_all()
         db.create_all()
         demo_password = app.config.get("DEMO_PASSWORD", "CoLab!Demo2026")
 
