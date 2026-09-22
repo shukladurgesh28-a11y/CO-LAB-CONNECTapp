@@ -6,13 +6,17 @@ import {
   Zap, Droplets, Hammer, Sparkles, Baby, PawPrint,
   ArrowRight, ChevronRight, HeartHandshake, BadgeCheck, Network,
   Check, Clock, Star, TrendingUp, Layers, Building2, ScanLine,
-  Wallet, Award, Calendar, Activity, ArrowUpRight, Play, Menu, X
+  Wallet, Award, Calendar, Activity, ArrowUpRight, Play, Menu, X,
+  ChevronDown, Globe, Fingerprint, Scale, Eye
 } from 'lucide-react';
 import { DUR, EASE, SPRING } from '../motion/tokens';
-import { usePrefersReducedMotion } from '../motion/hooks';
+import { usePrefersReducedMotion, useCountUp } from '../motion/hooks';
 
-// ── helpers ──────────────────────────────────────────────────────────
-function Reveal({ children, delay = 0, y = 18, className = '' }) {
+/* ═══════════════════════════════════════════════════════════════════════
+   HELPERS — animation wrappers
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function Reveal({ children, delay = 0, y = 24, className = '' }) {
   const reduce = usePrefersReducedMotion();
   if (reduce) return <div className={className}>{children}</div>;
   return (
@@ -20,183 +24,223 @@ function Reveal({ children, delay = 0, y = 18, className = '' }) {
       className={className}
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-64px' }}
-      transition={{ duration: 0.55, delay, ease: EASE.out }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.6, delay, ease: EASE.out }}
     >
       {children}
     </motion.div>
   );
 }
 
-function Stagger({ children, stagger = 0.08 }) {
+function Stagger({ children, stagger = 0.07, className = '' }) {
   const reduce = usePrefersReducedMotion();
-  if (reduce) return <>{children}</>;
+  if (reduce) return <div className={className}>{children}</div>;
   return (
     <motion.div
+      className={className}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: '-48px' }}
+      viewport={{ once: true, margin: '-60px' }}
       variants={{ hidden: {}, visible: { transition: { staggerChildren: stagger } } }}
     >
       {children}
     </motion.div>
   );
 }
-const cardReveal = {
-  hidden: { opacity: 0, y: 16, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: EASE.out } },
+
+const cardV = {
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: EASE.out } },
 };
 
-// ── Navbar — integrated with hero, not floating pill ───────────────────
+/* ═══════════════════════════════════════════════════════════════════════
+   ANIMATED STAT COUNTER
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function StatCounter({ value, suffix = '', label }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const count = useCountUp(inView ? value : 0, 1200);
+  return (
+    <div ref={ref} className="text-center">
+      <p className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+        {Math.round(count)}{suffix}
+      </p>
+      <p className="text-sm text-white/50 mt-1 font-medium">{label}</p>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NAVBAR — premium transparent → solid transition
+   ═══════════════════════════════════════════════════════════════════════ */
+
 function LandingNav() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => setScrolled(window.scrollY > 32);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-  // integrated header: at top it's part of hero (≈ transparent with hairline), after scroll becomes solid white header
-  const headerCls = scrolled
-    ? 'bg-white/92 backdrop-blur-xl border-b border-slate-200 shadow-sm'
-    : 'bg-transparent border-b border-white/[0.08]';
-  const linkCls = scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-indigo-100/85 hover:text-white';
-  const logoText = scrolled ? 'text-slate-900' : 'text-white';
+
+  const headerBg = scrolled
+    ? 'bg-white/90 backdrop-blur-2xl border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+    : 'bg-transparent border-b border-white/[0.06]';
+  const linkStyle = scrolled
+    ? 'text-slate-500 hover:text-slate-900'
+    : 'text-white/60 hover:text-white';
+  const logoColor = scrolled ? 'text-slate-900' : 'text-white';
+
   return (
-    <header className={`fixed top-0 inset-x-0 z-40 transition-all duration-300 ${headerCls}`}>
-      <div className="mx-auto max-w-[1160px] px-4 sm:px-6 lg:px-8 h-[56px] flex items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1e1b4b] to-[#4f46e5] text-white font-black text-[13px] flex items-center justify-center shadow-sm">CC</span>
-          <span className={`hidden sm:block font-extrabold tracking-tight text-sm ${logoText}`}>CO-LAB CONNECT</span>
-          <span className={`hidden lg:inline text-[10px] px-2 py-1 rounded-full font-bold tracking-widest ${scrolled ? 'bg-slate-900 text-white' : 'bg-white text-indigo-700'}`}>COOPERATIVE OS</span>
+    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${headerBg}`}>
+      <div className="mx-auto max-w-[1200px] px-5 sm:px-6 lg:px-8 h-[60px] flex items-center justify-between gap-4">
+        <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+          <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black text-[13px] flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:shadow-indigo-500/40 transition-shadow">CC</span>
+          <span className={`hidden sm:block font-extrabold tracking-tight text-sm transition-colors ${logoColor}`}>CO-LAB CONNECT</span>
         </Link>
-        <nav className={`hidden md:flex items-center gap-5 text-[13px] font-semibold ${linkCls}`}>
-          <a href="#how" className="transition">How It Works</a>
-          <a href="#services" className="transition">Services</a>
-          <a href="#cooperative" className="transition">For Cooperatives</a>
-          <a href="#trust" className="transition">Trust</a>
+
+        <nav className={`hidden md:flex items-center gap-6 text-[13px] font-semibold transition-colors ${linkStyle}`}>
+          <a href="#how" className="transition-colors duration-200">How It Works</a>
+          <a href="#services" className="transition-colors duration-200">Services</a>
+          <a href="#cooperative" className="transition-colors duration-200">For Cooperatives</a>
+          <a href="#trust" className="transition-colors duration-200">Trust</a>
         </nav>
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/login')} className={`hidden sm:inline-flex px-3.5 py-2 rounded-lg text-sm font-bold transition ${scrolled ? 'text-slate-700 hover:bg-slate-100' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>Login</button>
-          <button onClick={() => navigate('/register')} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0f172a] text-white text-sm font-bold shadow-md hover:bg-black transition active:scale-[0.98]">
-            Get Started <ArrowUpRight size={14} />
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => navigate('/login')}
+            className={`hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${scrolled ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+          >
+            Login
           </button>
-          <button onClick={() => setOpen(v => !v)} className={`md:hidden p-2 rounded-lg ${scrolled ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`} aria-label="Menu">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate('/register')}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white text-slate-900 text-sm font-bold shadow-lg shadow-white/10 hover:shadow-white/20 transition-shadow"
+          >
+            Get Started <ArrowUpRight size={14} />
+          </motion.button>
+          <button
+            onClick={() => setOpen(v => !v)}
+            className={`md:hidden p-2 rounded-lg transition ${scrolled ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
+            aria-label="Menu"
+          >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
       {open && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 flex flex-col gap-1">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-xl px-5 py-3 flex flex-col gap-1"
+        >
           {[['How It Works', '#how'], ['Services', '#services'], ['For Cooperatives', '#cooperative'], ['Trust', '#trust']].map(([l, h]) => (
-            <a key={l} href={h} onClick={() => setOpen(false)} className="px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50">{l}</a>
+            <a key={l} href={h} onClick={() => setOpen(false)} className="px-3 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">{l}</a>
           ))}
-          <button onClick={() => navigate('/login')} className="mt-1 px-3 py-2.5 rounded-xl text-sm font-bold bg-slate-900 text-white">Login</button>
-        </div>
+          <button onClick={() => { setOpen(false); navigate('/login'); }} className="mt-2 px-3 py-3 rounded-xl text-sm font-bold bg-slate-900 text-white">Login</button>
+        </motion.div>
       )}
     </header>
   );
 }
 
-// ── Product visual — layered cards, readable, integrated ───────────────
-function ProductPreview({ reduce }) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], [8, -8]);
+/* ═══════════════════════════════════════════════════════════════════════
+   HERO PRODUCT MOCKUP — single clean app window
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function HeroMockup({ reduce }) {
   return (
-    <motion.div ref={ref} style={reduce ? undefined : { y }} className="relative w-full max-w-[460px] mx-auto lg:mx-0">
-      {/* soft depth glow */}
-      <div className="absolute -inset-4 bg-gradient-to-br from-indigo-500/15 via-violet-500/10 to-teal-400/10 blur-2xl rounded-[28px] pointer-events-none" />
-      {/* central main card */}
-      <motion.div
-        initial={reduce?false:{opacity:0, scale:0.96, y:8}}
-        animate={{opacity:1, scale:1, y:0}}
-        transition={{duration:0.55, delay:0.38, ease:EASE.out}}
-        className="relative bg-white rounded-[20px] shadow-[0_20px_48px_-16px_rgba(15,23,42,0.30),0_1px_0_rgba(0,0,0,0.06)_inset] border border-slate-200 overflow-hidden"
-      >
-        <div className="h-9 flex items-center gap-1.5 px-4 border-b border-slate-100 bg-slate-50/70">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-          <span className="ml-3 text-[11px] font-semibold text-slate-500 hidden sm:inline">New Service Request • Live</span>
-          <span className="ml-auto flex items-center gap-1.5 text-[10px] font-bold text-emerald-600"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE</span>
-        </div>
-        <div className="p-5">
-          <p className="text-[11px] font-bold tracking-widest text-slate-400">NEW SERVICE REQUEST #4821</p>
-          <h3 className="mt-2 text-[15px] font-extrabold text-slate-900 leading-tight">Electrical — Faulty bedroom wiring</h3>
-          <p className="text-sm text-slate-600">Model Colony • Flat 402, Shanti Heights</p>
-          <div className="mt-3 flex items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 text-white font-bold text-xs"><Calendar size={12} /> Tomorrow 11:00–12:00</span>
-            <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs">₹500</span>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">AI: 3 ranked</span>
-            <span>• Skill • Distance • Fairness</span>
-          </div>
-          <div className="mt-3 h-px bg-slate-100" />
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">Cooperative will review → allocate</span>
-            <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center"><ArrowRight size={12} /></span>
-          </div>
-        </div>
-      </motion.div>
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.7, delay: 0.35, ease: EASE.out }}
+      className="relative w-full max-w-[520px] mx-auto"
+    >
+      {/* Glow behind the card */}
+      <div className="absolute -inset-8 bg-gradient-to-br from-indigo-500/20 via-violet-500/15 to-teal-400/10 blur-3xl rounded-[32px] pointer-events-none" />
 
-      {/* floating — AI matching — sits above central, minimal text cover */}
-      <motion.div
-        initial={reduce?false:{opacity:0, y:12, scale:0.96}}
-        animate={{opacity:1, y:0, scale:1}}
-        transition={{duration:0.5, delay:0.48, ease:EASE.out}}
-        className="absolute -left-1 sm:-left-4 -top-12 sm:-top-10 w-[168px] rounded-2xl bg-white shadow-[0_12px_32px_-12px_rgba(15,23,42,0.28)] border border-slate-200 p-3 -rotate-[1deg]"
-      >
-        <p className="text-[10px] font-extrabold tracking-widest text-indigo-600">AI MATCHING</p>
-        <div className="mt-2 space-y-1.5">
-          <div className="flex items-center justify-between rounded-xl bg-indigo-600 text-white px-2.5 py-1.5">
-            <span className="text-xs font-bold">A. Verma</span><span className="text-xs font-black">92%</span>
+      {/* Main app window */}
+      <div className="relative bg-[#0c0f1a]/90 backdrop-blur-md rounded-2xl border border-white/[0.08] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden">
+        {/* Window chrome */}
+        <div className="h-10 flex items-center gap-2 px-4 border-b border-white/[0.06] bg-white/[0.03]">
+          <span className="w-3 h-3 rounded-full bg-white/10" />
+          <span className="w-3 h-3 rounded-full bg-white/10" />
+          <span className="w-3 h-3 rounded-full bg-white/10" />
+          <span className="mx-auto text-[11px] font-semibold text-white/30 tracking-wide">colabconnect.app/console</span>
+        </div>
+
+        {/* Content */}
+        <div className="p-5 space-y-4">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.2em] text-indigo-400/80">INCOMING REQUEST</p>
+              <h3 className="text-base font-extrabold text-white mt-0.5">Electrical — Faulty wiring</h3>
+              <p className="text-xs text-white/40">Model Colony • Flat 402 • Shanti Heights</p>
+            </div>
+            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live
+            </span>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-2.5 py-1.5">
-            <span className="text-xs font-semibold text-slate-700">S. Khan</span><span className="text-xs font-bold text-slate-500">87%</span>
+
+          {/* AI Ranked Candidates */}
+          <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3.5">
+            <p className="text-[10px] font-bold tracking-[0.15em] text-white/40 mb-2.5">AI-RANKED CANDIDATES</p>
+            <div className="space-y-2">
+              {[
+                { name: 'A. Verma', score: 92, skill: 'Electrician', rating: '4.8★', selected: true },
+                { name: 'S. Khan', score: 87, skill: 'Electrician', rating: '4.6★', selected: false },
+                { name: 'R. Joshi', score: 84, skill: 'Electrician', rating: '4.5★', selected: false },
+              ].map((w, i) => (
+                <div key={w.name} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition ${w.selected ? 'bg-indigo-500/15 border border-indigo-500/25' : 'bg-white/[0.02] border border-white/[0.04]'}`}>
+                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${w.selected ? 'bg-indigo-500 text-white' : 'bg-white/10 text-white/50'}`}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-bold ${w.selected ? 'text-white' : 'text-white/60'}`}>{w.name}</p>
+                    <p className="text-[11px] text-white/30">{w.skill} • {w.rating}</p>
+                  </div>
+                  <div className={`text-right ${w.selected ? '' : 'opacity-50'}`}>
+                    <span className={`text-sm font-black ${w.selected ? 'text-indigo-300' : 'text-white/40'}`}>{w.score}%</span>
+                    <p className="text-[10px] text-white/25">match</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-2.5 py-1.5">
-            <span className="text-xs font-semibold text-slate-700">R. Joshi</span><span className="text-xs font-bold text-slate-500">84%</span>
+
+          {/* Payout strip */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-center">
+              <p className="text-[10px] text-white/30">Service</p>
+              <p className="text-sm font-black text-white">₹500</p>
+            </div>
+            <ArrowRight size={12} className="text-white/20 shrink-0" />
+            <div className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-center">
+              <p className="text-[10px] text-white/30">Coop 10% + Welfare 2%</p>
+              <p className="text-sm font-black text-white/60">₹60</p>
+            </div>
+            <ArrowRight size={12} className="text-white/20 shrink-0" />
+            <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-center">
+              <p className="text-[10px] text-emerald-400/60">Worker</p>
+              <p className="text-sm font-black text-emerald-400">₹440</p>
+            </div>
           </div>
         </div>
-        <p className="mt-2 text-[11px] text-slate-400">Explainable • ranked</p>
-      </motion.div>
-
-      {/* floating — worker allocated — sits to the right, mid */}
-      <motion.div
-        initial={reduce?false:{opacity:0, y:12, scale:0.96}}
-        animate={{opacity:1, y:0, scale:1}}
-        transition={{duration:0.5, delay:0.56, ease:EASE.out}}
-        className="absolute -right-2 sm:-right-5 top-[92px] sm:top-[76px] w-[160px] rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-[0_12px_32px_-12px_rgba(16,185,129,0.45)] p-3 rotate-[0.8deg]"
-      >
-        <p className="text-[10px] font-bold tracking-widest text-white/70">WORKER ALLOCATED</p>
-        <p className="mt-1 text-sm font-extrabold">A. Verma</p>
-        <p className="text-xs text-white/80">Electrician • 4.8 ★</p>
-        <div className="mt-2 rounded-xl bg-white text-slate-900 px-2.5 py-1.5 flex items-center justify-between">
-          <span className="text-xs font-bold">Accepted</span><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        </div>
-      </motion.div>
-
-      {/* floating — payout */}
-      <motion.div
-        initial={reduce?false:{opacity:0, y:12, scale:0.96}}
-        animate={{opacity:1, y:0, scale:1}}
-        transition={{duration:0.5, delay:0.64, ease:EASE.out}}
-        className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-[246px] rounded-2xl bg-white shadow-[0_16px_32px_-12px_rgba(15,23,42,0.24)] border border-slate-200 p-3"
-      >
-        <p className="text-[10px] font-extrabold tracking-widest text-slate-400 text-center">FAIR PAYOUT</p>
-        <div className="mt-2 grid grid-cols-3 text-center divide-x divide-slate-100 text-xs">
-          <span><b className="block text-slate-900">₹500</b><span className="text-slate-500">Customer</span></span>
-          <span><b className="block text-slate-900">₹50+₹10</b><span className="text-slate-500">Society + Welfare</span></span>
-          <span className="text-emerald-600"><b className="block">₹440</b><span>Worker</span></span>
-        </div>
-      </motion.div>
-
-      <p className="text-center text-[11px] text-indigo-200/60 mt-8">Live preview — real cooperative console data</p>
+      </div>
     </motion.div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════════════════════════════════ */
 
 const SERVICES = [
   { icon: Zap, name: 'Electrician', color: 'from-amber-400 to-orange-500', note: 'Wiring, repair, installs' },
@@ -207,491 +251,812 @@ const SERVICES = [
   { icon: PawPrint, name: 'Pet Care', color: 'from-violet-400 to-indigo-500', note: 'Sitting, walking' },
 ];
 
-const STEPS = [
-  { n: '01', t: 'Customer request', d: 'Service, location, date/time and urgency — one guided flow.', icon: ScanLine },
-  { n: '02', t: 'AI-assisted matching', d: 'Ranks verified workers by skill, distance, availability and fairness.', icon: Brain },
-  { n: '03', t: 'Cooperative review', d: 'Society reviews ranked candidates and retains final allocation authority.', icon: Building2 },
-  { n: '04', t: 'Worker allocation', d: 'Assigned worker accepts — customer and worker stay in sync.', icon: Users },
-  { n: '05', t: 'Service & payment', d: 'Completion, transparent payout and automatic welfare contribution.', icon: Wallet },
-  { n: '06', t: 'Feedback loop', d: 'Ratings build reputation and inform future matching.', icon: Star },
+const HOW_STEPS = [
+  { n: '01', t: 'Request a service', d: 'Describe what you need, pick a time and location.', icon: ScanLine, accent: 'indigo' },
+  { n: '02', t: 'AI ranks workers', d: 'Our engine scores by skill, distance, availability & fairness.', icon: Brain, accent: 'violet' },
+  { n: '03', t: 'Cooperative reviews', d: 'The society reviews ranked candidates and makes the final call.', icon: Building2, accent: 'blue' },
+  { n: '04', t: 'Worker allocated', d: 'The assigned worker accepts — you and the worker stay in sync.', icon: Users, accent: 'emerald' },
+  { n: '05', t: 'Service & payment', d: 'Job completed, transparent payout, automatic welfare contribution.', icon: Wallet, accent: 'teal' },
+  { n: '06', t: 'Feedback loop', d: 'Rate the service — ratings build reputation, inform future matching.', icon: Star, accent: 'amber' },
 ];
+
+const ACCENT_MAP = {
+  indigo: { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-400', dot: 'bg-indigo-500' },
+  violet: { bg: 'bg-violet-500/10', border: 'border-violet-500/20', text: 'text-violet-400', dot: 'bg-violet-500' },
+  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', dot: 'bg-blue-500' },
+  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+  teal: { bg: 'bg-teal-500/10', border: 'border-teal-500/20', text: 'text-teal-400', dot: 'bg-teal-500' },
+  amber: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', dot: 'bg-amber-500' },
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LANDING PAGE
+   ═══════════════════════════════════════════════════════════════════════ */
 
 export default function Landing() {
   const navigate = useNavigate();
   const reduce = usePrefersReducedMotion();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 40]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.9], [1, 0.2]);
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 60]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-slate-900 overflow-x-hidden selection:bg-indigo-100">
+    <div className="min-h-screen bg-[#050816] text-white overflow-x-hidden selection:bg-indigo-500/20">
       <LandingNav />
 
-      {/* ── HERO — recomposed: compact first viewport, premium calm ── */}
-      <section ref={heroRef} className="relative overflow-hidden bg-[#0b0e1f] text-white">
-        {/* subtle background — supports, not competes */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-          <div className="absolute -top-20 -left-20 w-[640px] h-[420px] bg-[radial-gradient(ellipse_at_center,_rgba(99,102,241,0.22),_transparent_64%)] blur-2xl" />
-          <div className="absolute -bottom-24 right-0 w-[560px] h-[420px] bg-[radial-gradient(ellipse_at_center,_rgba(20,184,166,0.14),_transparent_60%)] blur-2xl" />
-          <div className="absolute top-[22%] right-[18%] w-64 h-64 bg-violet-500/10 blur-3xl rounded-full" />
+      {/* ════════════════════ HERO ════════════════════ */}
+      <section
+        ref={heroRef}
+        className="relative min-h-[100vh] flex flex-col justify-center overflow-hidden landing-aurora"
+        style={{
+          background: 'linear-gradient(135deg, #050816 0%, #0a0f2c 25%, #0f0a2a 50%, #0a1628 75%, #050816 100%)',
+          backgroundSize: '300% 300%',
+        }}
+      >
+        {/* Aurora glow orbs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[10%] left-[5%] w-[600px] h-[400px] rounded-full bg-indigo-600/10 blur-[100px] landing-glow-orb" />
+          <div className="absolute top-[30%] right-[0%] w-[500px] h-[350px] rounded-full bg-violet-600/8 blur-[100px] landing-glow-orb-delayed" />
+          <div className="absolute bottom-[10%] left-[30%] w-[400px] h-[300px] rounded-full bg-teal-500/6 blur-[100px] landing-glow-orb-slow" />
         </div>
 
-        <motion.div style={reduce ? undefined : { y: heroY, opacity: heroOpacity }} className="relative max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-[84px] sm:pt-[96px] pb-6 sm:pb-8">
-          <div className="mt-2 grid lg:grid-cols-[1.12fr_0.88fr] gap-6 lg:gap-8 items-center">
-            {/* headline — one strong statement, clean wrapping */}
+        {/* Grid overlay */}
+        <div className="absolute inset-0 landing-grid-pattern pointer-events-none" />
+
+        <motion.div
+          style={reduce ? undefined : { y: heroY, opacity: heroOpacity }}
+          className="relative max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8 pt-[100px] sm:pt-[120px] pb-12 sm:pb-16 w-full"
+        >
+          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-14 items-center">
+            {/* Left — Copy */}
             <div>
-              <motion.div initial={reduce?false:{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.5, delay:0.08, ease:EASE.out}}>
-                <div className="inline-flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur text-xs font-semibold max-w-full">
-                  <span className="px-2.5 py-1 rounded-full bg-white text-slate-900 font-extrabold text-xs shrink-0">NEW</span>
-                  <span className="text-indigo-100 truncate"><span>Cooperative-first workforce OS</span><span className="hidden sm:inline"> — not a middleman marketplace</span></span>
-                  <span className="hidden sm:inline-flex w-6 h-6 rounded-full bg-white/15 items-center justify-center shrink-0"><ArrowUpRight size={12} /></span>
-                </div>
+              {/* Badge */}
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1, ease: EASE.out }}
+              >
+                <span className="inline-flex items-center gap-2 px-1 pr-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] backdrop-blur-sm text-xs">
+                  <span className="px-2.5 py-1 rounded-full bg-indigo-500 text-white font-bold text-[11px]">NEW</span>
+                  <span className="text-white/50 font-medium">Cooperative-first workforce OS</span>
+                </span>
               </motion.div>
-              <motion.h1 initial={reduce?false:{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:0.55, delay:0.14, ease:EASE.out}} className="mt-4 text-[30px] sm:text-[38px] lg:text-[44px] xl:text-[48px] font-black tracking-[-0.03em] leading-[0.92]">
-                <span className="block">Trusted Services.</span>
-                <span className="block bg-gradient-to-r from-indigo-200 via-violet-200 to-teal-100 bg-clip-text text-transparent">Fair Opportunities.</span>
-                <span className="block">Stronger Cooperatives.</span>
+
+              {/* Headline */}
+              <motion.h1
+                initial={reduce ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.15, ease: EASE.out }}
+                className="mt-6 text-[36px] sm:text-[48px] lg:text-[56px] xl:text-[62px] font-black tracking-[-0.04em] leading-[0.92]"
+              >
+                <span className="block text-white">Trusted Services.</span>
+                <span className="block bg-gradient-to-r from-indigo-300 via-violet-300 to-teal-200 bg-clip-text text-transparent">Fair Opportunities.</span>
+                <span className="block text-white">Stronger Cooperatives.</span>
               </motion.h1>
-              <motion.p initial={reduce?false:{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.5, delay:0.20, ease:EASE.out}} className="mt-3 text-[14px] sm:text-[15px] leading-6 text-indigo-100/80 max-w-[520px]">
-                One platform connecting customers with verified cooperative workers — societies and federations manage allocation fairly. AI ranks, the cooperative decides.
+
+              {/* Subheadline */}
+              <motion.p
+                initial={reduce ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.22, ease: EASE.out }}
+                className="mt-5 text-base sm:text-lg leading-relaxed text-white/40 max-w-[520px]"
+              >
+                One platform connecting customers with verified cooperative workers. AI ranks — the cooperative decides. Every payout transparent.
               </motion.p>
-              <motion.div initial={reduce?false:{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.5, delay:0.26, ease:EASE.out}} className="mt-6 flex flex-col sm:flex-row gap-3">
-                <motion.button whileHover={{ y: -1, scale: 1.01 }} whileTap={{ scale: 0.97 }} transition={SPRING.button} onClick={() => navigate('/register')} className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-slate-900 font-extrabold text-sm shadow-[0_12px_32px_-12px_rgba(255,255,255,0.45)] hover:bg-slate-50 transition will-change-transform">
+
+              {/* CTAs */}
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.28, ease: EASE.out }}
+                className="mt-8 flex flex-col sm:flex-row gap-3"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={SPRING.button}
+                  onClick={() => navigate('/register')}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-white text-slate-900 font-extrabold text-sm shadow-[0_0_40px_-8px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-4px_rgba(255,255,255,0.4)] transition-shadow will-change-transform"
+                >
                   Get Started <ArrowRight size={16} />
                 </motion.button>
-                <motion.a whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} href="#how" className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/10 border border-white/15 text-white font-bold text-sm hover:bg-white/15 transition will-change-transform">
-                  <Play size={14} /> Explore How It Works
+                <motion.a
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  href="#how"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/80 font-bold text-sm hover:bg-white/[0.1] hover:text-white transition will-change-transform"
+                >
+                  <Play size={14} /> See How It Works
                 </motion.a>
               </motion.div>
-              {/* small trust indicators — replaces generic stats */}
-              <motion.div initial={reduce?false:{opacity:0}} animate={{opacity:1}} transition={{duration:0.5, delay:0.34}} className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-indigo-100/75">
-                <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-300" /> Verified cooperative workers</span>
-                <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-300" /> Transparent payout</span>
-                <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-300" /> Cooperative-controlled allocation</span>
-              </motion.div>
-              {/* ecosystem visual — small, important */}
-              <motion.div initial={reduce?false:{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{duration:0.5, delay:0.40}} className="mt-5 rounded-xl bg-white/[0.07] border border-white/10 backdrop-blur px-3 py-2.5 flex items-center justify-between gap-1 text-[11px] font-bold max-w-[520px]">
-                {[
-                  { k: 'CUSTOMER', sub: 'Request' },
-                  { k: 'CO-LAB', sub: 'AI ranks' },
-                  { k: 'CO-OP', sub: 'Reviews' },
-                  { k: 'WORKER', sub: 'Serves' },
-                ].map((s,i,arr)=> (
-                  <span key={s.k} className="flex items-center gap-1">
-                    <span className="text-center leading-none">
-                      <span className="block text-white">{s.k}</span>
-                      <span className="block text-[10px] font-semibold text-indigo-200/60">{s.sub}</span>
-                    </span>
-                    {i < arr.length-1 && <ArrowRight size={10} className="text-white/25 mx-1" />}
-                  </span>
-                ))}
+
+              {/* Trust row */}
+              <motion.div
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.36 }}
+                className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-white/30"
+              >
+                <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-400/70" /> Verified cooperative workers</span>
+                <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-400/70" /> Transparent payout</span>
+                <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-400/70" /> Cooperative-controlled</span>
               </motion.div>
             </div>
 
-            {/* product visual — layered cards, readable */}
-            <motion.div initial={reduce?false:{opacity:0, y:16, scale:0.97}} animate={{opacity:1, y:0, scale:1}} transition={{duration:0.6, delay:0.30, ease:EASE.out}} className="lg:sticky lg:top-[72px]">
-              <ProductPreview reduce={reduce} />
-            </motion.div>
+            {/* Right — Product Mockup */}
+            <div className="hidden lg:block">
+              <HeroMockup reduce={reduce} />
+            </div>
           </div>
         </motion.div>
 
-        {/* bottom fade — shorter */}
-        <div className="h-6 bg-gradient-to-t from-[#f6f7fb] to-transparent relative" />
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        >
+          <span className="text-[11px] font-medium text-white/20 tracking-wider">SCROLL</span>
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <ChevronDown size={16} className="text-white/20" />
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* ── LOGO / FLOW STRIP ── */}
-      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
-        <Reveal>
-          <div className="rounded-2xl bg-white border border-slate-200 shadow-[0_12px_32px_-16px_rgba(15,23,42,0.16)] px-3 sm:px-6 py-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold text-slate-700">
-            {['Request', 'AI ranks', 'Cooperative reviews', 'Worker serves', 'Fair payout'].map((s, i, arr) => (
-              <span key={s} className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center">{i + 1}</span>
-                {s}
-                {i < arr.length - 1 && <ArrowRight size={12} className="text-slate-300" />}
-              </span>
-            ))}
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section id="how" className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-16">
-        <Reveal>
-          <p className="text-xs font-extrabold tracking-widest text-indigo-600">HOW CO-LAB CONNECT WORKS</p>
-          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight">Human decisions, <span className="text-indigo-600">assisted</span> by AI.</h2>
-          <p className="mt-2 text-sm text-slate-500 max-w-2xl">Every job follows one accountable flow. AI proposes — the society disposes. Payments and welfare are computed server-side.</p>
-        </Reveal>
-
-        <div className="mt-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-6 items-start">
-          {/* stepped cards with connector */}
-          <div className="relative">
-            <div className="absolute left-[18px] top-6 bottom-6 w-px bg-gradient-to-b from-indigo-200 via-violet-200 to-teal-200 hidden sm:block" />
-            <Stagger>
-              {STEPS.map((s, i) => (
-                <motion.div key={s.n} variants={cardReveal} className="relative flex gap-4 py-3">
-                  <span className="hidden sm:flex w-9 h-9 rounded-xl bg-slate-900 text-white text-xs font-black items-center justify-center shrink-0 mt-1 shadow">{s.n}</span>
-                  <div className="flex-1 rounded-2xl bg-white border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition">
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><s.icon size={16} /></span>
-                      <h3 className="font-extrabold text-sm">{s.t}</h3>
-                    </div>
-                    <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{s.d}</p>
-                  </div>
-                </motion.div>
+      {/* ════════════════════ ECOSYSTEM FLOW ════════════════════ */}
+      <section className="relative bg-[#050816]">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8 py-8">
+          <Reveal>
+            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm px-4 sm:px-8 py-5 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+              {[
+                { step: '1', label: 'Request', sub: 'Customer' },
+                { step: '2', label: 'AI Ranks', sub: 'Engine' },
+                { step: '3', label: 'Reviews', sub: 'Cooperative' },
+                { step: '4', label: 'Serves', sub: 'Worker' },
+                { step: '5', label: 'Fair Payout', sub: 'Automated' },
+              ].map((s, i, arr) => (
+                <span key={s.step} className="flex items-center gap-2.5">
+                  <span className="w-8 h-8 rounded-lg bg-white/[0.08] text-white/70 text-xs font-black flex items-center justify-center">{s.step}</span>
+                  <span className="text-center leading-none">
+                    <span className="block text-xs font-bold text-white/60">{s.label}</span>
+                    <span className="block text-[10px] text-white/25 mt-0.5">{s.sub}</span>
+                  </span>
+                  {i < arr.length - 1 && <ArrowRight size={12} className="text-white/15 mx-1" />}
+                </span>
               ))}
-            </Stagger>
-          </div>
-
-          {/* side principle card */}
-          <Reveal delay={0.08}>
-            <div className="lg:sticky lg:top-24 rounded-[24px] bg-slate-900 text-white p-6 sm:p-7 shadow-xl overflow-hidden relative">
-              <div className="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/30 blur-2xl rounded-full" />
-              <p className="text-xs font-extrabold tracking-widest text-indigo-300">PRINCIPLE</p>
-              <h3 className="mt-2 text-xl font-black">AI recommends. The cooperative decides.</h3>
-              <p className="mt-2 text-sm text-white/70 leading-relaxed">No auto-allocation. Every recommendation is explainable — skill, distance, availability and fairness — and the society allocates.</p>
-              <div className="mt-5 rounded-2xl bg-white text-slate-900 p-4">
-                <p className="text-xs font-bold tracking-widest text-slate-400">EXAMPLE FACTORS</p>
-                <ul className="mt-2 space-y-2 text-sm">
-                  <li className="flex items-center gap-2"><Check size={14} className="text-emerald-500" /> Skill & verification</li>
-                  <li className="flex items-center gap-2"><Check size={14} className="text-emerald-500" /> Distance & time slot</li>
-                  <li className="flex items-center gap-2"><Check size={14} className="text-emerald-500" /> Past performance & fairness</li>
-                </ul>
-              </div>
-              <button onClick={() => navigate('/register')} className="mt-5 w-full py-3 rounded-xl bg-white text-slate-900 font-extrabold text-sm hover:bg-slate-50 transition">See it in the console →</button>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* ── CUSTOMER EXPERIENCE ── */}
-      <section id="customer" className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-14">
-        <Reveal>
-          <div className="rounded-[28px] bg-white border border-slate-200 shadow-sm overflow-hidden grid lg:grid-cols-2">
-            <div className="p-6 sm:p-8">
-              <p className="text-xs font-extrabold tracking-widest text-emerald-600">FOR CUSTOMERS</p>
-              <h3 className="mt-2 text-2xl font-black">Request. Track. Relax.</h3>
-              <p className="mt-2 text-sm text-slate-500">Browse services, create a guided request, and follow the job from allocation to invoice — no phone-tag.</p>
-              <ul className="mt-5 space-y-3 text-sm">
-                {['Browse by category', 'Guided request with location & schedule', 'Live status: pending → allocated → completed', 'Transparent invoice & rating'].map(t => (
-                  <li key={t} className="flex gap-2"><span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><Check size={12} /></span><span className="text-slate-700">{t}</span></li>
-                ))}
-              </ul>
-              <button onClick={() => navigate('/register')} className="mt-6 px-5 py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition">Request a service</button>
+      {/* ════════════════════ HOW IT WORKS ════════════════════ */}
+      <section id="how" className="relative bg-[#050816] py-20 sm:py-28">
+        {/* Subtle glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/[0.04] blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-2xl mx-auto">
+              <p className="text-xs font-bold tracking-[0.2em] text-indigo-400/60">HOW CO-LAB CONNECT WORKS</p>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-white">
+                Human decisions, <span className="bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">powered</span> by AI.
+              </h2>
+              <p className="mt-3 text-sm sm:text-base text-white/35 max-w-lg mx-auto">Every job follows one accountable flow. AI proposes — the cooperative disposes.</p>
             </div>
-            <div className="bg-slate-50 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-slate-200">
-              <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                  <p className="text-xs font-bold tracking-widest text-slate-400">YOUR BOOKING</p>
-                  <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">In progress</span>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <span className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><Zap size={18} /></span>
-                    <div>
-                      <p className="text-sm font-bold">Electrical — Wiring fix</p>
-                      <p className="text-xs text-slate-500">A. Verma • En route • 11:30 AM</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                    {['Requested', 'Ranked', 'Allocated', 'En route'].map((s, i) => (
-                      <span key={s} className="flex items-center gap-1.5">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i <= 2 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-500'}`}>{i < 2 ? '✓' : i + 1}</span>
-                        <span className="hidden sm:inline">{s}</span>
-                        {i < 3 && <span className={`hidden sm:block w-6 h-0.5 ${i < 2 ? 'bg-slate-900' : 'bg-slate-200'}`} />}
+          </Reveal>
+
+          {/* Step cards — 2-column on desktop, stacked on mobile */}
+          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Stagger className="contents">
+              {HOW_STEPS.map((s) => {
+                const a = ACCENT_MAP[s.accent];
+                return (
+                  <motion.div
+                    key={s.n}
+                    variants={cardV}
+                    className="group rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5 sm:p-6 hover:bg-white/[0.05] hover:border-white/[0.1] transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <span className={`w-10 h-10 rounded-xl ${a.bg} border ${a.border} flex items-center justify-center shrink-0`}>
+                        <s.icon size={18} className={a.text} />
                       </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-white/20 tracking-widest">{s.n}</span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${a.dot} opacity-40`} />
+                        </div>
+                        <h3 className="text-sm font-extrabold text-white mt-1">{s.t}</h3>
+                        <p className="text-[13px] text-white/35 mt-1.5 leading-relaxed">{s.d}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </Stagger>
+          </div>
+
+          {/* Principle callout */}
+          <Reveal delay={0.1}>
+            <div className="mt-10 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-indigo-500/15 p-6 sm:p-8 max-w-3xl mx-auto">
+              <div className="flex flex-col sm:flex-row items-start gap-4">
+                <span className="w-12 h-12 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center shrink-0">
+                  <Brain size={20} className="text-indigo-400" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-extrabold text-white">AI recommends. The cooperative decides.</h3>
+                  <p className="mt-1.5 text-sm text-white/40 leading-relaxed">Every recommendation is explainable — skill, distance, availability, and fairness. No auto-allocation. The society always has final authority.</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {['Explainable factors', 'Rolling 30-day fairness', 'Human-in-the-loop'].map(t => (
+                      <span key={t} className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-xs font-semibold text-white/50">{t}</span>
                     ))}
                   </div>
-                  <div className="rounded-xl bg-slate-900 text-white p-3 flex items-center justify-between">
-                    <span className="text-xs text-white/70">Amount</span><span className="font-extrabold">₹500</span>
-                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+        </div>
       </section>
 
-      {/* ── WORKER EXPERIENCE ── */}
-      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <Reveal>
-          <div className="rounded-[28px] bg-[#0f172a] text-white overflow-hidden grid lg:grid-cols-2">
-            <div className="p-6 sm:p-8">
-              <p className="text-xs font-extrabold tracking-widest text-teal-300">FOR WORKERS</p>
-              <h3 className="mt-2 text-2xl font-black">Fair work. Real growth.</h3>
-              <p className="mt-2 text-sm text-white/70">Accept allocated jobs, complete services, keep 88% of every job and build a portable work history.</p>
-              <div className="mt-6 grid grid-cols-3 gap-3">
-                {[
-                  { k: 'Payout', v: '88%' },
-                  { k: 'Welfare', v: '2%' },
-                  { k: 'Rating', v: '4.8★' },
-                ].map(x => (
-                  <div key={x.k} className="rounded-2xl bg-white/10 border border-white/10 p-3">
-                    <p className="text-xs text-white/60">{x.k}</p><p className="text-lg font-black">{x.v}</p>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => navigate('/register')} className="mt-6 px-5 py-3 rounded-xl bg-white text-slate-900 font-extrabold text-sm">Join as a worker</button>
-            </div>
-            <div className="bg-white/5 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-white/10">
-              <div className="space-y-3">
-                {[
-                  { t: 'Available jobs', s: '2 new allocations', c: 'bg-emerald-500' },
-                  { t: 'Job #4821 — Electrical', s: 'Accepted • Today 11 AM • ₹440 payout', c: 'bg-white text-slate-900' },
-                  { t: 'Work history', s: '24 completed • 4.8★ avg', c: 'bg-white/10 border border-white/15' },
-                ].map(r => (
-                  <div key={r.t} className={`rounded-2xl p-4 ${r.c.includes('bg-white') && !r.c.includes('bg-white/10') ? 'bg-white text-slate-900 border border-slate-200' : r.c}`}>
-                    <p className="text-sm font-bold">{r.t}</p><p className={`text-xs ${r.c.includes('emerald') ? 'text-white/90' : r.c.includes('bg-white') && !r.c.includes('bg-white/10') ? 'text-slate-500' : 'text-white/60'}`}>{r.s}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── COOPERATIVE COMMAND CENTER ── */}
-      <section id="cooperative" className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <Reveal>
-          <div className="rounded-[28px] bg-white border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 sm:p-8 grid lg:grid-cols-[1.05fr_0.95fr] gap-6 items-center">
+      {/* ════════════════════ FOR CUSTOMERS ════════════════════ */}
+      <section id="customer" className="relative bg-[#f8f9fc] text-slate-900 py-20 sm:py-28">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              {/* Copy */}
               <div>
-                <p className="text-xs font-extrabold tracking-widest text-indigo-600">FOR SOCIETIES & FEDERATIONS</p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight">A real command center — <span className="text-indigo-600">not a spreadsheet.</span></h3>
-                <p className="mt-2 text-sm text-slate-500">Incoming requests, ranked candidates, allocations and workforce analytics in one place. Operates like modern B2B SaaS.</p>
-                <ul className="mt-5 grid sm:grid-cols-2 gap-2 text-sm">
-                  {['Live request queue', 'AI-ranked candidates', 'One-click allocation', 'Workforce availability', 'Demand heatmap', 'Welfare oversight'].map(t => (
-                    <li key={t} className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">✓</span>{t}</li>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                  <Users size={12} /> For Customers
+                </span>
+                <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight">
+                  Request. Track. <span className="text-emerald-600">Relax.</span>
+                </h2>
+                <p className="mt-3 text-base text-slate-500 leading-relaxed max-w-md">Browse services, create a guided request, and follow the job from allocation to invoice — no phone-tag.</p>
+                <ul className="mt-6 space-y-3">
+                  {['Browse verified professionals by category', 'Guided request with location & schedule', 'Live status: pending → allocated → completed', 'Transparent invoice & rating'].map(t => (
+                    <li key={t} className="flex gap-3 items-start">
+                      <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><Check size={12} /></span>
+                      <span className="text-sm text-slate-600">{t}</span>
+                    </li>
                   ))}
                 </ul>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/register')}
+                  className="mt-8 px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 transition-shadow"
+                >
+                  Request a service →
+                </motion.button>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold tracking-widest text-slate-500">LIVE QUEUE • 3 pending</p>
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                </div>
-                {[
-                  { id: '#4821 Electrical', meta: 'Model Colony • ₹500 • normal', badge: 'AI: 92%' },
-                  { id: '#4820 Plumbing', meta: 'Kothrud • ₹700 • urgent', badge: 'AI: 88%' },
-                  { id: '#4819 Cleaning', meta: 'Baner • ₹400 • normal', badge: 'AI: 85%' },
-                ].map(r => (
-                  <div key={r.id} className="rounded-xl bg-white border border-slate-200 p-3 flex items-center justify-between gap-3">
-                    <div><p className="text-sm font-bold">{r.id}</p><p className="text-xs text-slate-500">{r.meta}</p></div>
-                    <span className="px-2.5 py-1 rounded-full bg-indigo-600 text-white text-xs font-bold">{r.badge}</span>
+
+              {/* Mockup */}
+              <Reveal delay={0.1}>
+                <div className="rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+                  <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <p className="text-[11px] font-bold tracking-[0.15em] text-slate-400">YOUR BOOKING</p>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">In progress</span>
                   </div>
-                ))}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl bg-slate-900 text-white p-3 text-center"><p className="text-xs text-white/60">Workers</p><p className="font-black">33</p></div>
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 text-center"><p className="text-xs text-slate-500">Pending</p><p className="font-black">3</p></div>
-                  <div className="rounded-xl bg-white border border-slate-200 p-3 text-center"><p className="text-xs text-slate-500">Allocated</p><p className="font-black">12</p></div>
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-center gap-3.5">
+                      <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20"><Zap size={18} /></span>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">Electrical — Wiring fix</p>
+                        <p className="text-xs text-slate-500">A. Verma • En route • 11:30 AM</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {['Requested', 'Ranked', 'Allocated', 'En route'].map((s, i) => (
+                        <span key={s} className="flex items-center gap-1.5 text-xs font-semibold">
+                          <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold ${i <= 2 ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>{i < 3 ? '✓' : i + 1}</span>
+                          <span className={`hidden sm:inline ${i <= 2 ? 'text-slate-700' : 'text-slate-400'}`}>{s}</span>
+                          {i < 3 && <span className={`hidden sm:block w-4 lg:w-6 h-0.5 ${i < 2 ? 'bg-slate-900' : 'bg-slate-200'}`} />}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="rounded-xl bg-slate-900 text-white p-3.5 flex items-center justify-between">
+                      <span className="text-xs text-white/50">Amount</span>
+                      <span className="font-extrabold text-lg">₹500</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+        </div>
       </section>
 
-      {/* ── AI MATCHING ── */}
-      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <Reveal>
-          <div className="rounded-[28px] bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 text-white overflow-hidden p-6 sm:p-8">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
+      {/* ════════════════════ FOR WORKERS ════════════════════ */}
+      <section className="relative bg-[#050816] py-20 sm:py-28 overflow-hidden">
+        {/* Accent glow */}
+        <div className="absolute top-1/2 left-0 w-[500px] h-[400px] bg-teal-500/[0.04] blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              {/* Copy */}
               <div>
-                <p className="text-xs font-extrabold tracking-widest text-indigo-200">AI-ASSISTED MATCHING</p>
-                <h3 className="mt-2 text-2xl font-black">Smarter matching. Human-controlled decisions.</h3>
-                <p className="mt-2 text-sm text-indigo-100/85">The engine explains every ranking. The cooperative reviews and allocates — AI never decides alone.</p>
-                <div className="mt-5 inline-flex gap-2 flex-wrap">
-                  {['AI-assisted recommendations', 'Explainable factors', 'Cooperative allocates'].map(t => (
-                    <span key={t} className="px-3 py-1.5 rounded-full bg-white text-indigo-700 text-xs font-bold">{t}</span>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-bold">
+                  <HeartHandshake size={12} /> For Workers
+                </span>
+                <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight text-white">
+                  Fair work. <span className="bg-gradient-to-r from-teal-300 to-emerald-300 bg-clip-text text-transparent">Real growth.</span>
+                </h2>
+                <p className="mt-3 text-base text-white/35 leading-relaxed max-w-md">Accept allocated jobs, complete services, keep 88% of every job and build a portable work history.</p>
+
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  {[
+                    { k: 'Payout', v: '88%', color: 'text-emerald-400' },
+                    { k: 'Welfare Fund', v: '2%', color: 'text-teal-400' },
+                    { k: 'Avg. Rating', v: '4.8★', color: 'text-amber-400' },
+                  ].map(x => (
+                    <div key={x.k} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4">
+                      <p className="text-[11px] text-white/30 font-medium">{x.k}</p>
+                      <p className={`text-2xl font-black mt-1 ${x.color}`}>{x.v}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/register')}
+                  className="mt-8 px-6 py-3 rounded-xl bg-white text-slate-900 font-extrabold text-sm shadow-lg shadow-white/10 hover:shadow-white/20 transition-shadow"
+                >
+                  Join as a worker →
+                </motion.button>
+              </div>
+
+              {/* Worker dashboard mockup */}
+              <Reveal delay={0.1}>
+                <div className="space-y-3">
+                  {[
+                    { t: 'Available jobs', s: '2 new allocations waiting', icon: Zap, accent: 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400' },
+                    { t: 'Job #4821 — Electrical', s: 'Accepted • Today 11 AM • ₹440 payout', icon: Check, accent: 'bg-white/[0.06] border-white/[0.08] text-white/60' },
+                    { t: 'Work history', s: '24 completed • 4.8★ average rating', icon: Award, accent: 'bg-white/[0.06] border-white/[0.08] text-white/60' },
+                  ].map(r => (
+                    <div key={r.t} className={`rounded-xl border p-4 flex items-center gap-3.5 ${r.accent}`}>
+                      <span className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <r.icon size={16} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-bold text-white">{r.t}</p>
+                        <p className="text-xs text-white/35 mt-0.5">{r.s}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════════════════════ FOR COOPERATIVES ════════════════════ */}
+      <section id="cooperative" className="relative bg-[#f8f9fc] text-slate-900 py-20 sm:py-28">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
+                <Building2 size={12} /> For Societies & Federations
+              </span>
+              <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight">
+                A real command center — <span className="text-indigo-600">not a spreadsheet.</span>
+              </h2>
+              <p className="mt-3 text-base text-slate-500">Incoming requests, ranked candidates, allocations and workforce analytics in one place.</p>
+            </div>
+          </Reveal>
+
+          {/* Bento grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Large card — Live queue */}
+            <Reveal className="sm:col-span-2 lg:col-span-2">
+              <div className="rounded-2xl bg-white border border-slate-200 shadow-lg shadow-slate-200/50 p-5 sm:p-6 h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[11px] font-bold tracking-[0.15em] text-slate-400">LIVE QUEUE • 3 PENDING</p>
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-red-500"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live</span>
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { id: '#4821 Electrical', meta: 'Model Colony • ₹500 • normal', badge: 'AI: 92%' },
+                    { id: '#4820 Plumbing', meta: 'Kothrud • ₹700 • urgent', badge: 'AI: 88%' },
+                    { id: '#4819 Cleaning', meta: 'Baner • ₹400 • normal', badge: 'AI: 85%' },
+                  ].map(r => (
+                    <div key={r.id} className="rounded-xl bg-slate-50 border border-slate-100 p-3.5 flex items-center justify-between gap-3 hover:border-slate-200 transition">
+                      <div><p className="text-sm font-bold text-slate-800">{r.id}</p><p className="text-xs text-slate-500">{r.meta}</p></div>
+                      <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-bold shadow-sm">{r.badge}</span>
+                    </div>
                   ))}
                 </div>
               </div>
-              {/* viz */}
-              <div className="rounded-2xl bg-white text-slate-900 p-4 sm:p-5">
-                <p className="text-xs font-bold tracking-widest text-slate-400 text-center">REQUEST → RANK → REVIEW → ALLOCATE</p>
-                <div className="mt-4 flex items-start justify-between gap-2">
-                  <div className="text-center flex-1">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center mx-auto"><ScanLine size={18} /></div>
-                    <p className="text-xs font-bold mt-1.5">Request</p>
-                  </div>
-                  <span className="mt-5 text-slate-300">→</span>
-                  <div className="text-center flex-1">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto"><Brain size={18} /></div>
-                    <p className="text-xs font-bold mt-1.5">AI ranks</p>
-                    <div className="mt-2 space-y-1 text-[11px]">
-                      <p className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 font-semibold">A. Verma 92%</p>
-                      <p className="px-2 py-1 rounded-full bg-slate-100 text-slate-600">S. Khan 87%</p>
+            </Reveal>
+
+            {/* Stats column */}
+            <Reveal delay={0.06}>
+              <div className="rounded-2xl bg-slate-900 text-white p-5 sm:p-6 h-full">
+                <p className="text-[11px] font-bold tracking-[0.15em] text-white/40">WORKFORCE OVERVIEW</p>
+                <div className="mt-4 space-y-3">
+                  {[
+                    { label: 'Active Workers', value: '33', trend: '+4 this week' },
+                    { label: 'Jobs Today', value: '12', trend: '3 pending' },
+                    { label: 'Revenue (MTD)', value: '₹1.2L', trend: '+18%' },
+                  ].map(s => (
+                    <div key={s.label} className="rounded-xl bg-white/[0.06] border border-white/[0.06] p-3.5">
+                      <p className="text-xs text-white/40">{s.label}</p>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <p className="text-xl font-black">{s.value}</p>
+                        <p className="text-[11px] text-emerald-400 font-semibold">{s.trend}</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="mt-5 text-slate-300">→</span>
-                  <div className="text-center flex-1">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto"><BadgeCheck size={18} /></div>
-                    <p className="text-xs font-bold mt-1.5">Coop decides</p>
-                    <p className="mt-2 text-[11px] px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold">Allocated ✓</p>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
+            </Reveal>
 
-      {/* ── TRUST ── */}
-      <section id="trust" className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <Stagger>
-          <motion.div variants={cardReveal} className="text-center">
-            <p className="text-xs font-extrabold tracking-widest text-slate-400">TRUST & VERIFICATION</p>
-            <h3 className="mt-2 text-2xl font-black">Verification you can see.</h3>
-          </motion.div>
-          <div className="mt-6 grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { icon: Shield, t: 'Verified workers', d: 'Background & skill checks' },
-              { icon: Building2, t: 'Cooperative-based', d: 'Society-managed workforce' },
-              { icon: Layers, t: 'Transparent', d: 'Explainable allocation' },
-              { icon: Calendar, t: 'Service history', d: 'Every job tracked' },
-              { icon: Star, t: 'Ratings', d: 'Reputation that matters' },
-              { icon: Wallet, t: 'Secure payouts', d: 'Server-computed' },
-            ].map(f => (
-              <motion.div key={f.t} variants={cardReveal} className="rounded-2xl bg-white border border-slate-200 p-4 text-center">
-                <span className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center mx-auto"><f.icon size={16} /></span>
-                <p className="text-sm font-bold mt-2">{f.t}</p>
-                <p className="text-xs text-slate-500 mt-1">{f.d}</p>
-              </motion.div>
-            ))}
-          </div>
-        </Stagger>
-      </section>
-
-      {/* ── PAYOUT + ANALYTICS row ── */}
-      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 grid lg:grid-cols-2 gap-6">
-        <Reveal>
-          <div className="rounded-[24px] bg-white border border-slate-200 p-6 shadow-sm h-full">
-            <p className="text-xs font-extrabold tracking-widest text-slate-400">FAIR PAYOUT</p>
-            <h4 className="mt-1 font-black">Every rupee, explained.</h4>
-            <div className="mt-4 rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="grid grid-cols-3 text-center divide-x divide-slate-200">
-                <div className="p-4 bg-slate-50"><p className="text-xs text-slate-500">Customer pays</p><p className="font-black">₹500</p></div>
-                <div className="p-4"><p className="text-xs text-slate-500">Society 10%</p><p className="font-black">₹50</p></div>
-                <div className="p-4"><p className="text-xs text-slate-500">Welfare 2%</p><p className="font-black">₹10</p></div>
-              </div>
-              <div className="p-4 bg-emerald-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-emerald-700">Worker receives</span><span className="text-lg font-black text-emerald-700">₹440</span>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 mt-2">No hidden cuts. Backend-computed via Decimal.</p>
-          </div>
-        </Reveal>
-        <Reveal delay={0.06}>
-          <div className="rounded-[24px] bg-slate-900 text-white p-6 h-full">
-            <p className="text-xs font-extrabold tracking-widest text-white/60">ANALYTICS</p>
-            <h4 className="mt-1 font-black">Know your workforce.</h4>
-            <div className="mt-4 grid grid-cols-3 gap-3">
+            {/* Feature cards row */}
+            <Stagger className="contents">
               {[
-                { k: 'Availability', v: '82%', trend: '+4%' },
-                { k: 'Demand', v: 'High', trend: 'Pune' },
-                { k: 'Satisfaction', v: '4.7★', trend: '+0.2' },
-              ].map(a => (
-                <div key={a.k} className="rounded-2xl bg-white/10 border border-white/10 p-3">
-                  <p className="text-xs text-white/60">{a.k}</p><p className="font-black">{a.v}</p><p className="text-xs text-emerald-300">{a.trend}</p>
-                </div>
+                { icon: Brain, t: 'AI-Ranked Candidates', d: 'Explainable scoring with skill, distance, fairness factors', color: 'text-violet-600 bg-violet-50' },
+                { icon: Scale, t: 'Fairness Engine', d: 'Gini-based allocation ensures equal opportunity across all workers', color: 'text-indigo-600 bg-indigo-50' },
+                { icon: BarChart3, t: 'Demand Forecast', d: '7-day predictions with AI recommendations for workforce planning', color: 'text-emerald-600 bg-emerald-50' },
+              ].map(f => (
+                <motion.div key={f.t} variants={cardV} className="rounded-2xl bg-white border border-slate-200 p-5 hover:shadow-lg hover:border-slate-300 transition-all duration-300">
+                  <span className={`w-10 h-10 rounded-xl ${f.color} flex items-center justify-center`}><f.icon size={18} /></span>
+                  <h4 className="text-sm font-extrabold text-slate-900 mt-3">{f.t}</h4>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{f.d}</p>
+                </motion.div>
               ))}
-            </div>
-            <div className="mt-4 h-2 rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full w-[68%] bg-white rounded-full" />
-            </div>
-            <p className="text-xs text-white/50 mt-2">Allocation trend • Welfare contribution • Completion rate</p>
+            </Stagger>
           </div>
-        </Reveal>
+        </div>
       </section>
 
-      {/* ── SERVICES ── */}
-      <section id="services" className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-        <Reveal>
-          <h3 className="text-2xl font-black text-center">One network, every household need</h3>
-          <p className="text-sm text-slate-500 text-center mt-1">Verified professionals across 6+ categories — one cooperative network.</p>
-        </Reveal>
-        <Stagger>
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* ════════════════════ AI MATCHING ════════════════════ */}
+      <section className="relative bg-[#050816] py-20 sm:py-28 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[20%] right-[10%] w-[500px] h-[400px] bg-indigo-600/[0.06] blur-[100px] rounded-full" />
+          <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[300px] bg-violet-500/[0.04] blur-[100px] rounded-full" />
+        </div>
+
+        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="rounded-[24px] bg-gradient-to-br from-indigo-600/20 via-violet-600/15 to-indigo-600/10 border border-indigo-500/15 p-6 sm:p-10 overflow-hidden">
+              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <div>
+                  <p className="text-[11px] font-bold tracking-[0.2em] text-indigo-400/60">AI-ASSISTED MATCHING</p>
+                  <h2 className="mt-3 text-2xl sm:text-3xl font-black text-white">Smarter matching. Human-controlled decisions.</h2>
+                  <p className="mt-3 text-sm text-white/35 leading-relaxed">The engine explains every ranking. The cooperative reviews and allocates — AI never decides alone.</p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {['Skill match 30%', 'Distance 15%', 'Availability 15%', 'Rating 10%', 'Experience 10%', 'Fairness 20%'].map(t => (
+                      <span key={t} className="px-3 py-1.5 rounded-lg bg-white/[0.08] border border-white/[0.06] text-xs font-semibold text-white/50">{t}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Visual flow */}
+                <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5">
+                  <p className="text-[10px] font-bold tracking-[0.15em] text-white/30 text-center mb-5">REQUEST → RANK → REVIEW → ALLOCATE</p>
+                  <div className="flex items-start justify-between gap-2">
+                    {[
+                      { icon: ScanLine, label: 'Request', color: 'bg-white/10', extra: null },
+                      { icon: Brain, label: 'AI ranks', color: 'bg-indigo-500/20', extra: (
+                        <div className="mt-2 space-y-1 text-[11px]">
+                          <p className="px-2 py-1 rounded-lg bg-indigo-500/15 text-indigo-300 font-semibold">A. Verma 92%</p>
+                          <p className="px-2 py-1 rounded-lg bg-white/[0.04] text-white/40">S. Khan 87%</p>
+                        </div>
+                      )},
+                      { icon: BadgeCheck, label: 'Coop decides', color: 'bg-emerald-500/20', extra: (
+                        <p className="mt-2 text-[11px] px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-bold">Allocated ✓</p>
+                      )},
+                    ].map((step, i, arr) => (
+                      <div key={step.label} className="flex items-start gap-2 flex-1">
+                        <div className="text-center flex-1">
+                          <div className={`w-12 h-12 rounded-xl ${step.color} text-white/70 flex items-center justify-center mx-auto`}>
+                            <step.icon size={18} />
+                          </div>
+                          <p className="text-xs font-bold text-white/60 mt-2">{step.label}</p>
+                          {step.extra}
+                        </div>
+                        {i < arr.length - 1 && <span className="mt-5 text-white/15 shrink-0">→</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════════════════════ SERVICES ════════════════════ */}
+      <section id="services" className="relative bg-[#f8f9fc] text-slate-900 py-20 sm:py-28">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight">One network, every household need</h2>
+              <p className="text-sm text-slate-500 mt-2">Verified professionals across 6+ categories — one cooperative network.</p>
+            </div>
+          </Reveal>
+
+          <Stagger className="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {SERVICES.map(s => (
               <motion.button
                 key={s.name}
-                variants={cardReveal}
-                whileHover={{ y: -4, scale: 1.015 }}
-                whileTap={{ scale: 0.98 }}
+                variants={cardV}
+                whileHover={{ y: -6, scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => navigate('/register')}
-                className="rounded-2xl bg-white border border-slate-200 p-5 text-center hover:shadow-lg hover:border-slate-300 transition text-left"
+                className="group rounded-2xl bg-white border border-slate-200 p-5 text-center hover:shadow-xl hover:border-slate-300 transition-all duration-300 cursor-pointer"
               >
-                <span className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mx-auto`}>
-                  <s.icon className="text-white" size={20} />
+                <span className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow`}>
+                  <s.icon className="text-white" size={22} />
                 </span>
-                <p className="font-bold text-sm mt-3">{s.name}</p>
-                <p className="text-xs text-slate-500">{s.note}</p>
+                <p className="font-bold text-sm mt-3 text-slate-900">{s.name}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{s.note}</p>
               </motion.button>
             ))}
-          </div>
-        </Stagger>
+          </Stagger>
+        </div>
       </section>
 
-      {/* ── ROLES ── */}
-      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-        <Reveal>
-          <h3 className="text-2xl font-black text-center">One platform, five roles.</h3>
-          <p className="text-sm text-slate-500 text-center mt-1">Each role sees only what it needs — same trusted foundation.</p>
-        </Reveal>
-        <Stagger>
-          <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {[
-              { r: 'Customer', d: 'Find & track trusted services', c: 'bg-indigo-600' },
-              { r: 'Worker', d: 'Access fair, rated opportunities', c: 'bg-emerald-600' },
-              { r: 'Society', d: 'Manage local workforce', c: 'bg-blue-600' },
-              { r: 'Federation', d: 'Coordinate the network', c: 'bg-violet-600' },
-              { r: 'Admin', d: 'Govern & audit the platform', c: 'bg-slate-900' },
-            ].map(x => (
-              <motion.div key={x.r} variants={cardReveal} className="rounded-2xl bg-white border border-slate-200 p-4">
-                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold text-white ${x.c}`}>{x.r}</span>
-                <p className="text-sm text-slate-600 mt-2">{x.d}</p>
-              </motion.div>
-            ))}
-          </div>
-        </Stagger>
-      </section>
+      {/* ════════════════════ TRUST BENTO ════════════════════ */}
+      <section id="trust" className="relative bg-[#050816] py-20 sm:py-28">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-xl mx-auto mb-10">
+              <p className="text-xs font-bold tracking-[0.2em] text-white/30">TRUST & VERIFICATION</p>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-white">Verification you can <span className="bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent">see.</span></h2>
+            </div>
+          </Reveal>
 
-      {/* ── FINAL CTA ── */}
-      <section className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
-        <Reveal>
-          <div className="rounded-[28px] bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-10 overflow-hidden relative">
-            <div className="absolute -right-20 -top-20 w-72 h-72 bg-indigo-500/30 blur-3xl rounded-full" />
-            <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-teal-500/20 blur-3xl rounded-full" />
-            <div className="relative grid lg:grid-cols-[1.2fr_0.8fr] gap-6 items-center">
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-black leading-tight">Build stronger communities<br />through better workforce connections.</h3>
-                <p className="mt-2 text-sm text-white/70">Join customers, workers and cooperatives on one accountable platform.</p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button onClick={() => navigate('/register')} className="px-6 py-3 rounded-xl bg-white text-slate-900 font-extrabold text-sm hover:bg-slate-50 transition">Get Started</button>
-                  <button onClick={() => navigate('/login')} className="px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white font-bold text-sm hover:bg-white/15 transition">Explore CO-LAB CONNECT</button>
+          {/* Bento trust grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Hero trust card */}
+            <Reveal className="sm:col-span-2 lg:col-span-1 lg:row-span-2">
+              <div className="rounded-2xl bg-gradient-to-b from-emerald-500/15 to-teal-500/10 border border-emerald-500/15 p-6 h-full flex flex-col justify-between">
+                <div>
+                  <span className="w-14 h-14 rounded-xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
+                    <Shield size={24} className="text-emerald-400" />
+                  </span>
+                  <h3 className="text-xl font-black text-white mt-4">Cooperative-verified workforce</h3>
+                  <p className="text-sm text-white/35 mt-2 leading-relaxed">Every worker is verified through the cooperative society — background checks, skill certification, and continuous oversight by the community.</p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-white/[0.06]">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/60"><BadgeCheck size={16} /></span>
+                    <div>
+                      <p className="text-xs font-bold text-white/60">Society-level accountability</p>
+                      <p className="text-[11px] text-white/25">Not a gig marketplace</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="rounded-2xl bg-white text-slate-900 p-4">
-                <p className="text-xs font-bold tracking-widest text-slate-400">WHY NOW</p>
-                <ul className="mt-2 space-y-2 text-sm">
-                  <li className="flex gap-2"><Check size={14} className="text-emerald-500 mt-0.5" /> Cooperative-first, not commission-first</li>
-                  <li className="flex gap-2"><Check size={14} className="text-emerald-500 mt-0.5" /> AI assists — society decides</li>
-                  <li className="flex gap-2"><Check size={14} className="text-emerald-500 mt-0.5" /> Welfare built into every job</li>
-                </ul>
-              </div>
-            </div>
+            </Reveal>
+
+            {/* Smaller trust cards */}
+            <Stagger className="contents">
+              {[
+                { icon: Layers, t: 'Transparent Allocation', d: 'Explainable AI scoring — skill, distance, fairness', color: 'text-indigo-400' },
+                { icon: Eye, t: 'Full Audit Trail', d: 'Every dispatch event logged and traceable', color: 'text-violet-400' },
+                { icon: Wallet, t: 'Secure Payouts', d: 'Server-computed math — no rounding leaks', color: 'text-teal-400' },
+                { icon: Star, t: 'Reputation System', d: 'Ratings inform future matching quality', color: 'text-amber-400' },
+              ].map(f => (
+                <motion.div key={f.t} variants={cardV} className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5 hover:bg-white/[0.05] hover:border-white/[0.1] transition-all duration-300">
+                  <span className={`w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center ${f.color}`}>
+                    <f.icon size={18} />
+                  </span>
+                  <h4 className="text-sm font-extrabold text-white mt-3">{f.t}</h4>
+                  <p className="text-xs text-white/30 mt-1.5 leading-relaxed">{f.d}</p>
+                </motion.div>
+              ))}
+            </Stagger>
           </div>
-        </Reveal>
+        </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row justify-between gap-4">
-          <div>
-            <p className="font-black tracking-tight">CO-LAB CONNECT</p>
-            <p className="text-xs text-slate-500">Trusted Services. Fair Opportunities. Stronger Cooperatives. • Cooperative-Owned Digital Workforce OS</p>
+      {/* ════════════════════ PAYOUT TRANSPARENCY ════════════════════ */}
+      <section className="relative bg-[#f8f9fc] text-slate-900 py-20 sm:py-28">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Reveal>
+              <div className="rounded-2xl bg-white border border-slate-200 shadow-lg shadow-slate-200/50 p-6 sm:p-8 h-full">
+                <p className="text-[11px] font-bold tracking-[0.15em] text-slate-400">FAIR PAYOUT</p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight">Every rupee, <span className="text-emerald-600">explained.</span></h3>
+                <div className="mt-5 rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="grid grid-cols-3 text-center divide-x divide-slate-100">
+                    <div className="p-4 bg-slate-50"><p className="text-xs text-slate-500">Customer pays</p><p className="text-lg font-black mt-0.5">₹500</p></div>
+                    <div className="p-4"><p className="text-xs text-slate-500">Society 10%</p><p className="text-lg font-black mt-0.5">₹50</p></div>
+                    <div className="p-4"><p className="text-xs text-slate-500">Welfare 2%</p><p className="text-lg font-black mt-0.5">₹10</p></div>
+                  </div>
+                  <div className="p-4 bg-emerald-50 flex items-center justify-between border-t border-emerald-100">
+                    <span className="text-sm font-bold text-emerald-700">Worker receives</span>
+                    <span className="text-2xl font-black text-emerald-700">₹440</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 mt-3">No hidden cuts. Backend-computed via Decimal math.</p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.06}>
+              <div className="rounded-2xl bg-slate-900 text-white p-6 sm:p-8 h-full">
+                <p className="text-[11px] font-bold tracking-[0.15em] text-white/40">ANALYTICS & INSIGHTS</p>
+                <h3 className="mt-2 text-2xl font-black">Know your workforce.</h3>
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  {[
+                    { k: 'Availability', v: '82%', trend: '+4%' },
+                    { k: 'Demand', v: 'High', trend: 'Pune' },
+                    { k: 'Satisfaction', v: '4.7★', trend: '+0.2' },
+                  ].map(a => (
+                    <div key={a.k} className="rounded-xl bg-white/[0.06] border border-white/[0.06] p-3.5">
+                      <p className="text-[11px] text-white/35">{a.k}</p>
+                      <p className="text-lg font-black mt-1">{a.v}</p>
+                      <p className="text-[11px] text-emerald-400 font-semibold mt-0.5">{a.trend}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: '68%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.2, delay: 0.3, ease: EASE.outExpo }}
+                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
+                  />
+                </div>
+                <p className="text-[11px] text-white/25 mt-2">Allocation trend • Welfare contribution • Completion rate</p>
+              </div>
+            </Reveal>
           </div>
-          <p className="text-xs text-slate-400">© {new Date().getFullYear()} CO-LAB CONNECT • Built for SIH 2026</p>
+        </div>
+      </section>
+
+      {/* ════════════════════ SOCIAL PROOF / STATS ════════════════════ */}
+      <section className="relative bg-[#050816] py-16 sm:py-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        </div>
+
+        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            <StatCounter value={50} suffix="+" label="Verified Workers" />
+            <StatCounter value={200} suffix="+" label="Bookings Processed" />
+            <StatCounter value={5} suffix="" label="Cooperative Societies" />
+            <StatCounter value={88} suffix="%" label="Worker Payout Rate" />
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════ ROLES ════════════════════ */}
+      <section className="relative bg-[#f8f9fc] text-slate-900 py-20 sm:py-28">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight">One platform, five roles.</h2>
+              <p className="text-sm text-slate-500 mt-2">Each role sees only what it needs — same trusted foundation.</p>
+            </div>
+          </Reveal>
+
+          <Stagger className="mt-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              { r: 'Customer', d: 'Find & track trusted services', icon: Users, bg: 'bg-gradient-to-br from-indigo-500 to-violet-600' },
+              { r: 'Worker', d: 'Access fair, rated opportunities', icon: HeartHandshake, bg: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
+              { r: 'Society', d: 'Manage local workforce', icon: Building2, bg: 'bg-gradient-to-br from-blue-500 to-indigo-600' },
+              { r: 'Federation', d: 'Coordinate the network', icon: Network, bg: 'bg-gradient-to-br from-violet-500 to-purple-600' },
+              { r: 'Admin', d: 'Govern & audit the platform', icon: Shield, bg: 'bg-gradient-to-br from-slate-700 to-slate-900' },
+            ].map(x => (
+              <motion.div key={x.r} variants={cardV} className="rounded-2xl bg-white border border-slate-200 p-5 hover:shadow-lg hover:border-slate-300 transition-all duration-300">
+                <span className={`w-10 h-10 rounded-xl ${x.bg} text-white flex items-center justify-center shadow-lg`}>
+                  <x.icon size={18} />
+                </span>
+                <p className="text-sm font-extrabold mt-3">{x.r}</p>
+                <p className="text-xs text-slate-500 mt-1">{x.d}</p>
+              </motion.div>
+            ))}
+          </Stagger>
+        </div>
+      </section>
+
+      {/* ════════════════════ FINAL CTA ════════════════════ */}
+      <section className="relative bg-[#050816] py-20 sm:py-28 overflow-hidden">
+        {/* Aurora glows */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[20%] right-[-5%] w-[500px] h-[400px] bg-indigo-600/10 blur-[120px] rounded-full landing-glow-orb" />
+          <div className="absolute bottom-[10%] left-[-5%] w-[500px] h-[400px] bg-violet-500/8 blur-[120px] rounded-full landing-glow-orb-delayed" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-teal-500/[0.04] blur-[100px] rounded-full" />
+        </div>
+
+        <div className="relative max-w-[900px] mx-auto px-5 sm:px-6 lg:px-8 text-center">
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.1]">
+              Build stronger communities<br className="hidden sm:block" />
+              <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-teal-200 bg-clip-text text-transparent">through better workforce connections.</span>
+            </h2>
+            <p className="mt-4 text-base text-white/35 max-w-lg mx-auto">Join customers, workers and cooperatives on one accountable, transparent platform.</p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              <motion.button
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                transition={SPRING.button}
+                onClick={() => navigate('/register')}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-slate-900 font-extrabold text-sm shadow-[0_0_40px_-8px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-4px_rgba(255,255,255,0.4)] transition-shadow"
+              >
+                Get Started <ArrowRight size={16} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/login')}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/80 font-bold text-sm hover:bg-white/[0.1] hover:text-white transition"
+              >
+                Explore CO-LAB CONNECT
+              </motion.button>
+            </div>
+
+            {/* Why now */}
+            <div className="mt-10 flex flex-wrap justify-center gap-5 text-xs font-medium text-white/30">
+              <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-400/60" /> Cooperative-first, not commission-first</span>
+              <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-400/60" /> AI assists — society decides</span>
+              <span className="inline-flex items-center gap-1.5"><Check size={12} className="text-emerald-400/60" /> Welfare built into every job</span>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ════════════════════ FOOTER ════════════════════ */}
+      <footer className="relative bg-[#030510] border-t border-white/[0.04]">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            {/* Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black text-[13px] flex items-center justify-center shadow-lg shadow-indigo-500/25">CC</span>
+                <span className="font-extrabold tracking-tight text-sm text-white">CO-LAB CONNECT</span>
+              </div>
+              <p className="mt-3 text-xs text-white/25 leading-relaxed max-w-[260px]">Cooperative-owned digital workforce OS. Trusted services, fair opportunities, stronger cooperatives.</p>
+            </div>
+
+            {/* Platform */}
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.15em] text-white/30 mb-3">PLATFORM</p>
+              <ul className="space-y-2">
+                {[['How It Works', '#how'], ['Services', '#services'], ['For Cooperatives', '#cooperative'], ['Trust & Verification', '#trust']].map(([l, h]) => (
+                  <li key={l}><a href={h} className="text-sm text-white/40 hover:text-white/70 transition">{l}</a></li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Roles */}
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.15em] text-white/30 mb-3">ROLES</p>
+              <ul className="space-y-2">
+                {['Customer', 'Worker', 'Society Admin', 'Federation Admin', 'Platform Admin'].map(r => (
+                  <li key={r}><span className="text-sm text-white/40">{r}</span></li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Project */}
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.15em] text-white/30 mb-3">PROJECT</p>
+              <ul className="space-y-2">
+                <li><span className="text-sm text-white/40">Built for SIH 2026</span></li>
+                <li><span className="text-sm text-white/40">React + FastAPI</span></li>
+                <li><span className="text-sm text-white/40">Fair Dispatch Engine</span></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-10 pt-6 border-t border-white/[0.04] flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p className="text-xs text-white/20">© {new Date().getFullYear()} CO-LAB CONNECT. All rights reserved.</p>
+            <p className="text-xs text-white/15">Cooperative-First Digital Workforce OS</p>
+          </div>
         </div>
       </footer>
     </div>
