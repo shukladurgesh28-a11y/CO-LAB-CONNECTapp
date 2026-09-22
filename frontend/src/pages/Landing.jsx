@@ -215,21 +215,21 @@ function HeroMockup({ reduce }) {
             </div>
           </div>
 
-          {/* Payout strip */}
+          {/* Trust strip — no pricing */}
           <div className="flex items-center gap-2">
             <div className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-center">
               <p className="text-[10px] text-white/30">Service</p>
-              <p className="text-sm font-black text-white">₹500</p>
+              <p className="text-xs font-bold text-white/80">Verified</p>
             </div>
             <ArrowRight size={12} className="text-white/20 shrink-0" />
             <div className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-center">
-              <p className="text-[10px] text-white/30">Coop 10% + Welfare 2%</p>
-              <p className="text-sm font-black text-white/60">₹60</p>
+              <p className="text-[10px] text-white/30">Allocation</p>
+              <p className="text-xs font-bold text-white/60">Cooperative</p>
             </div>
             <ArrowRight size={12} className="text-white/20 shrink-0" />
             <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-center">
-              <p className="text-[10px] text-emerald-400/60">Worker</p>
-              <p className="text-sm font-black text-emerald-400">₹440</p>
+              <p className="text-[10px] text-emerald-400/60">Payout</p>
+              <p className="text-xs font-bold text-emerald-400">Fair &amp; Transparent</p>
             </div>
           </div>
         </div>
@@ -559,8 +559,8 @@ export default function Landing() {
                       ))}
                     </div>
                     <div className="rounded-xl bg-slate-900 text-white p-3.5 flex items-center justify-between">
-                      <span className="text-xs text-white/50">Amount</span>
-                      <span className="font-extrabold text-lg">₹500</span>
+                      <span className="text-xs text-white/50">Status</span>
+                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> In progress</span>
                     </div>
                   </div>
                 </div>
@@ -616,7 +616,7 @@ export default function Landing() {
                 <div className="space-y-3">
                   {[
                     { t: 'Available jobs', s: '2 new allocations waiting', icon: Zap, accent: 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400' },
-                    { t: 'Job #4821 — Electrical', s: 'Accepted • Today 11 AM • ₹440 payout', icon: Check, accent: 'bg-white/[0.06] border-white/[0.08] text-white/60' },
+                    { t: 'Job #4821 — Electrical', s: 'Accepted • Today 11 AM • Verified', icon: Check, accent: 'bg-white/[0.06] border-white/[0.08] text-white/60' },
                     { t: 'Work history', s: '24 completed • 4.8★ average rating', icon: Award, accent: 'bg-white/[0.06] border-white/[0.08] text-white/60' },
                   ].map(r => (
                     <div key={r.t} className={`rounded-xl border p-4 flex items-center gap-3.5 ${r.accent}`}>
@@ -662,9 +662,9 @@ export default function Landing() {
                 </div>
                 <div className="space-y-2.5">
                   {[
-                    { id: '#4821 Electrical', meta: 'Model Colony • ₹500 • normal', badge: 'AI: 92%' },
-                    { id: '#4820 Plumbing', meta: 'Kothrud • ₹700 • urgent', badge: 'AI: 88%' },
-                    { id: '#4819 Cleaning', meta: 'Baner • ₹400 • normal', badge: 'AI: 85%' },
+                    { id: '#4821 Electrical', meta: 'Model Colony • normal', badge: 'AI: 92%' },
+                    { id: '#4820 Plumbing', meta: 'Kothrud • urgent', badge: 'AI: 88%' },
+                    { id: '#4819 Cleaning', meta: 'Baner • normal', badge: 'AI: 85%' },
                   ].map(r => (
                     <div key={r.id} className="rounded-xl bg-slate-50 border border-slate-100 p-3.5 flex items-center justify-between gap-3 hover:border-slate-200 transition">
                       <div><p className="text-sm font-bold text-slate-800">{r.id}</p><p className="text-xs text-slate-500">{r.meta}</p></div>
@@ -683,7 +683,7 @@ export default function Landing() {
                   {[
                     { label: 'Active Workers', value: '33', trend: '+4 this week' },
                     { label: 'Jobs Today', value: '12', trend: '3 pending' },
-                    { label: 'Revenue (MTD)', value: '₹1.2L', trend: '+18%' },
+                    { label: 'Completion Rate', value: '94%', trend: '+2%' },
                   ].map(s => (
                     <div key={s.label} className="rounded-xl bg-white/[0.06] border border-white/[0.06] p-3.5">
                       <p className="text-xs text-white/40">{s.label}</p>
@@ -868,16 +868,16 @@ export default function Landing() {
                 <h3 className="mt-2 text-2xl font-black tracking-tight">Every rupee, <span className="text-emerald-600">explained.</span></h3>
                 <div className="mt-5 rounded-xl border border-slate-200 overflow-hidden">
                   <div className="grid grid-cols-3 text-center divide-x divide-slate-100">
-                    <div className="p-4 bg-slate-50"><p className="text-xs text-slate-500">Customer pays</p><p className="text-lg font-black mt-0.5">₹500</p></div>
-                    <div className="p-4"><p className="text-xs text-slate-500">Society 10%</p><p className="text-lg font-black mt-0.5">₹50</p></div>
-                    <div className="p-4"><p className="text-xs text-slate-500">Welfare 2%</p><p className="text-lg font-black mt-0.5">₹10</p></div>
+                    <div className="p-4 bg-slate-50"><p className="text-xs text-slate-500">Customer</p><p className="text-sm font-bold mt-0.5">Service Payment</p></div>
+                    <div className="p-4"><p className="text-xs text-slate-500">Cooperative</p><p className="text-sm font-bold mt-0.5">Platform share</p></div>
+                    <div className="p-4"><p className="text-xs text-slate-500">Welfare</p><p className="text-sm font-bold mt-0.5">Worker fund</p></div>
                   </div>
                   <div className="p-4 bg-emerald-50 flex items-center justify-between border-t border-emerald-100">
                     <span className="text-sm font-bold text-emerald-700">Worker receives</span>
-                    <span className="text-2xl font-black text-emerald-700">₹440</span>
+                    <span className="text-sm font-black text-emerald-700">Fair &amp; Transparent</span>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-3">No hidden cuts. Backend-computed via Decimal math.</p>
+                <p className="text-xs text-slate-400 mt-3">No hidden cuts. Backend-computed.</p>
               </div>
             </Reveal>
 
