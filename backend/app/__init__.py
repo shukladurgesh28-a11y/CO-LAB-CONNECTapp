@@ -233,6 +233,7 @@ def create_app(config_name=None):
                 ("worker@demo.com", "worker", "Worker Demo", "9000000102"),
                 ("coop@demo.com", "cooperative_admin", "Coop Demo", "9000000103"),
                 ("federation@demo.com", "federation_admin", "Federation Demo", "9000000104"),
+                ("admin@demo.com", "platform_admin", "Platform Admin", "9000000100"),
             ]
             for email, role, name, phone in demo_accounts:
                 user = User.query.filter_by(email=email).first()

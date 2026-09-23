@@ -49,6 +49,9 @@ services:
       # -- Demo accounts: MUST match frontend quick-login buttons -------------
       - key: DEMO_PASSWORD
         value: CoLab!Demo2026
+      # -- Expose OTP in API response (no SMS gateway — demo/hackathon mode) ---
+      - key: OTP_EXPOSE_IN_RESPONSE
+        value: "true"
       # -- Money rates (keep identical to backend/.env / config defaults) -----
       - key: COMMISSION_RATE
         value: "0.10"

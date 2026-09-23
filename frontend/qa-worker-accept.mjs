@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const b=await chromium.launch();
+const ctx=await b.newContext({viewport:{width:1280,height:800}});
+const p=await ctx.newPage();
+await p.goto('http://localhost:5173/login',{waitUntil:'networkidle'});
+await p.fill('input[name="email"]','worker@demo.com');
+await p.fill('input[name="password"]','CoLab!Demo2026');
+await p.click('button[type="submit"]');
+await p.waitForTimeout(2500);
+console.log('after login', p.url());
+await p.goto('http://localhost:5173/worker/jobs',{waitUntil:'networkidle'});
+await p.waitForTimeout(1500);
+const hasAvailable = await p.evaluate(()=> document.body.innerText.includes('Available Customer Requests'));
+console.log('has Available Customer Requests:', hasAvailable);
+const pendingCount = await p.evaluate(()=>{
+  const el=document.querySelector('span.bg-white');
+  return document.body.innerText.match(/(\d+) pending/)?.[1] || 'unknown';
+});
+console.log('pending text:', pendingCount);
+const acceptBtn = await p.locator('button:has-text("Accept Directly")').count();
+console.log('Accept Directly buttons:', acceptBtn);
+await p.screenshot({path:'qa-worker-available.png', fullPage:false});
+console.log('saved qa-worker-available.png');
+await b.close();

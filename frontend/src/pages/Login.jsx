@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Check, Shield, Users, Sparkles } from 'lucide-react';
@@ -8,15 +8,18 @@ import { usePrefersReducedMotion } from '../motion/hooks';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const reduce = usePrefersReducedMotion();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(location.state?.verified ? '✓ Phone verified! Please sign in with your credentials.' : '');
   const [loading, setLoading] = useState(false);
 
   const demoAccounts = [
+    { label: 'Admin', email: 'admin@demo.com', password: 'CoLab!Demo2026', desc: 'Platform admin' },
     { label: 'Customer', email: 'customer@demo.com', password: 'CoLab!Demo2026', desc: 'Request services' },
     { label: 'Worker', email: 'worker@demo.com', password: 'CoLab!Demo2026', desc: 'Find work' },
     { label: 'Co-op Admin', email: 'coop@demo.com', password: 'CoLab!Demo2026', desc: 'Manage workforce' },
@@ -136,6 +139,12 @@ export default function Login() {
               <h2 className="text-xl font-black tracking-tight text-slate-900">Sign in to your account</h2>
               <p className="text-sm text-slate-500 mt-1">Welcome back — choose a demo role or use your credentials.</p>
 
+              {success && (
+                <div className="mt-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl px-4 py-3 font-medium">
+                  {success}
+                </div>
+              )}
+
               {error && (
                 <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
                   {error}
@@ -145,7 +154,7 @@ export default function Login() {
               {/* Demo quick login — premium cards */}
               <div className="mt-6">
                 <p className="text-[11px] font-bold tracking-widest text-slate-400">QUICK DEMO LOGIN</p>
-                <div className="mt-2 grid grid-cols-2 gap-2.5">
+                <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                   {demoAccounts.map(a => (
                     <button
                       key={a.label}
@@ -229,7 +238,8 @@ export default function Login() {
                   Demo accounts & passwords <span className="text-slate-400">▾</span>
                 </summary>
                 <div className="px-4 pb-4 space-y-1 text-xs font-mono text-slate-600 border-t border-slate-200 bg-white">
-                  <div className="pt-3">customer@demo.com / CoLab!Demo2026</div>
+                  <div className="pt-3">admin@demo.com / CoLab!Demo2026</div>
+                  <div>customer@demo.com / CoLab!Demo2026</div>
                   <div>worker@demo.com / CoLab!Demo2026</div>
                   <div>coop@demo.com / CoLab!Demo2026</div>
                   <div>federation@demo.com / CoLab!Demo2026</div>

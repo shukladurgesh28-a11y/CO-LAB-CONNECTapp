@@ -21,12 +21,12 @@ const CountNum = ({ value, money }) => (
 );
 
 const TABS = [
-  'Overview', 'Organization', 'Requests', 'AI Assistant', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
+  'Overview', 'Organization', 'Users', 'Requests', 'AI Assistant', 'Federations', 'Societies', 'Workers', 'Workforce', 'Matching',
   'Payments', 'Welfare', 'Disputes', 'Services', 'Analytics', 'Notifications', 'Audit',
 ];
 
 const TAB_ICONS = {
-  Overview: LayoutDashboard, Organization: Network, Requests: Inbox, 'AI Assistant': Sparkles,
+  Overview: LayoutDashboard, Organization: Network, Users: Users, Requests: Inbox, 'AI Assistant': Sparkles,
   Federations: Building2, Societies: Users, Workers: Briefcase, Workforce: Users, Matching: GitBranch,
   Payments: Wallet, Welfare: HeartHandshake, Disputes: AlertTriangle, Services: Wrench,
   Analytics: BarChart3, Notifications: Bell, Audit: ScrollText,
@@ -165,6 +165,9 @@ export default function AdminPanel() {
   const [allocWorker, setAllocWorker] = useState('');
   const [newCat, setNewCat] = useState({ name: '', slug: '', description: '' });
   const [newSvc, setNewSvc] = useState({ name: '', slug: '', category_id: '', base_price: '500' });
+  const [allUsers, setAllUsers] = useState([]);
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
 
   const get = useCallback(async (url, params) => {
     const res = await api.get(url, { params });
@@ -191,6 +194,10 @@ export default function AdminPanel() {
       }
       if (name === 'Notifications') setNotifs(await get('/api/notifications'));
       if (name === 'Audit') setAudit(await get('/api/admin/audit-logs'));
+      if (name === 'Users') {
+        const data = await get('/api/admin/users', { limit: 500 });
+        setAllUsers(Array.isArray(data) ? data : []);
+      }
       setLoaded((p) => ({ ...p, [name]: true }));
       setTabErrors((p) => ({ ...p, [name]: null }));
     } catch (err) {
@@ -422,7 +429,73 @@ export default function AdminPanel() {
             </div>
           )}
 
+          {tab === 'Users' && (() => {
+            const filtered = allUsers.filter(u => {
+              const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
+              const q = userSearch.toLowerCase();
+              const matchSearch = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.includes(q);
+              return matchRole && matchSearch;
+            });
+            const roleCounts = allUsers.reduce((acc, u) => { acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {});
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Card label="Total Users" icon={Users} tone="bg-indigo-50 text-indigo-600" value={allUsers.length} />
+                  <Card label="Customers" icon={Users} tone="bg-cyan-50 text-cyan-600" value={roleCounts['customer'] || 0} />
+                  <Card label="Workers" icon={Briefcase} tone="bg-emerald-50 text-emerald-600" value={roleCounts['worker'] || 0} />
+                  <Card label="Verified" icon={ShieldCheck} tone="bg-violet-50 text-violet-600" value={allUsers.filter(u => u.is_verified).length} />
+                </div>
+                <Section
+                  title="All registered users"
+                  sub={`${filtered.length} of ${allUsers.length} users`}
+                  icon={Users}
+                  right={
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Search name, email, phone…"
+                        value={userSearch}
+                        onChange={e => setUserSearch(e.target.value)}
+                        className={inputCls + ' text-xs w-44'}
+                      />
+                      <select value={userRoleFilter} onChange={e => setUserRoleFilter(e.target.value)}
+                        className="text-xs font-bold border border-slate-200 rounded-xl px-2.5 py-2 bg-white">
+                        <option value="all">All roles</option>
+                        <option value="customer">Customers</option>
+                        <option value="worker">Workers</option>
+                        <option value="cooperative_admin">Co-op Admin</option>
+                        <option value="federation_admin">Federation Admin</option>
+                        <option value="platform_admin">Platform Admin</option>
+                      </select>
+                      <button onClick={() => loadTab('Users', true)} className={btnGhost}>↻ Refresh</button>
+                    </div>
+                  }
+                >
+                  <Table head={['ID', 'Name', 'Email', 'Phone', 'Role', 'Verified', 'Active', 'Joined']}>
+                    {filtered.slice(0, 200).map(u => (
+                      <tr key={u.id} className="hover:bg-indigo-50/40 transition-colors">
+                        <td className="py-2.5 px-3 font-mono text-slate-400">#{u.id}</td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-900">{u.name || '—'}</td>
+                        <td className="py-2.5 px-3 text-slate-600 max-w-[180px] truncate">{u.email || '—'}</td>
+                        <td className="py-2.5 px-3 font-mono text-slate-500">{u.phone || '—'}</td>
+                        <td className="py-2.5 px-3">{badge(u.role?.replace('_', ' '))}</td>
+                        <td className="py-2.5 px-3">{u.is_verified ? <span className="text-emerald-600 font-bold text-xs">✓ Yes</span> : <span className="text-amber-600 font-bold text-xs">⚠ No</span>}</td>
+                        <td className="py-2.5 px-3">{u.is_active ? badge('active') : badge('suspended')}</td>
+                        <td className="py-2.5 px-3 text-slate-400 text-xs tabular-nums">{u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
+                      </tr>
+                    ))}
+                  </Table>
+                  {filtered.length === 0 && !tabErrors.Users && (
+                    <p className="text-sm text-slate-400 py-8 text-center">No users found{userSearch || userRoleFilter !== 'all' ? ' — try clearing the filter' : '. Users register via /register'}.</p>
+                  )}
+                  {filtered.length > 200 && <p className="text-xs text-slate-400 mt-2 text-center">Showing first 200 of {filtered.length} results.</p>}
+                </Section>
+              </div>
+            );
+          })()}
+
           {tab === 'Requests' && (
+
             <Section title="Service requests" sub={`${requests.length} across all societies`} icon={Inbox}
               right={pendingReqCount > 0 ? <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">{pendingReqCount} pending</span> : null}>
               <Table head={['ID', 'Service', 'Customer', 'Society', 'Status', 'Worker', 'Booking', 'Action']}>

@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: 1280, height: 800 } });
+const p = await ctx.newPage();
+await p.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
+await p.fill('input[name="email"]', 'coop@demo.com');
+await p.fill('input[name="password"]', 'CoLab!Demo2026');
+await p.click('button[type="submit"]');
+await p.waitForTimeout(2500);
+console.log('url', p.url());
+const txt = await p.evaluate(() => document.body.innerText);
+console.log('has Co-Op & Society:', txt.includes('Co-Op & Society Operations'));
+console.log('has Society Operations:', txt.includes('Society Operations'));
+console.log('snippet', txt.slice(0, 800));
+await b.close();
