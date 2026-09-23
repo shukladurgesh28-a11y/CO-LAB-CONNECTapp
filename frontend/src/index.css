@@ -1,9 +1,20 @@
 @import "tailwindcss";
-body { font-family: 'Inter', system-ui, sans-serif; }
-html { scroll-behavior: smooth; }
 
-/* ── Aurora gradient background animation ── */
-@keyframes aurora {
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Blue & White Aurora gradient background animation ── */
+@keyframes blue-aurora {
   0%, 100% {
     background-position: 0% 50%;
   }
@@ -19,14 +30,14 @@ html { scroll-behavior: smooth; }
 }
 
 .landing-aurora {
-  background-size: 300% 300%;
-  animation: aurora 18s ease infinite;
+  background-size: 250% 250%;
+  animation: blue-aurora 20s ease infinite;
 }
 
-/* ── Floating glow orbs ── */
+/* ── Floating blue glow orbs ── */
 @keyframes float-glow {
-  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.15; }
-  50% { transform: translateY(-20px) scale(1.05); opacity: 0.25; }
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.22; }
+  50% { transform: translateY(-24px) scale(1.08); opacity: 0.35; }
 }
 
 .landing-glow-orb {
@@ -39,37 +50,34 @@ html { scroll-behavior: smooth; }
   animation: float-glow 12s ease-in-out 5s infinite;
 }
 
-/* ── Grid pattern overlay ── */
+/* ── Blue Grid pattern overlay ── */
 .landing-grid-pattern {
   background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(59, 130, 246, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.landing-light-grid {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 /* ── Pulse ring animation ── */
 @keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.15); opacity: 0.3; }
-  100% { transform: scale(1); opacity: 0.6; }
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.18); opacity: 0.35; }
+  100% { transform: scale(1); opacity: 0.7; }
 }
 .landing-pulse-ring {
   animation: pulse-ring 3s ease-in-out infinite;
 }
 
-/* ── Stat counter shimmer ── */
-@keyframes stat-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.landing-stat-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.08), transparent);
-  background-size: 200% 100%;
-  animation: stat-shimmer 3s ease-in-out infinite;
-}
-
 /* ── Selection color ── */
 ::selection {
-  background-color: rgba(99, 102, 241, 0.2);
-  color: inherit;
+  background-color: rgba(37, 99, 235, 0.25);
+  color: #1e3a8a;
 }
+
