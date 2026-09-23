@@ -53,7 +53,7 @@ services:
       - key: COMMISSION_RATE
         value: "0.10"
       - key: WELFARE_RATE
-        value: "0.05"
+        value: "0.02"
       - key: TAX_RATE
         value: "0.00"
       - key: COMMISSION_INCLUDE_MATERIAL

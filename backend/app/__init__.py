@@ -144,7 +144,28 @@ def create_app(config_name=None):
 
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")}})
+    # Production must allow exactly https://colab-connect-three.vercel.app
+    # while local dev keeps working. Parse comma-separated CORS_ORIGINS safely.
+    _origins_raw = (app.config.get("CORS_ORIGINS") or "*").strip()
+    if _origins_raw == "*" or not _origins_raw:
+        _cors_origins = "*"
+        _supports_credentials = False
+    else:
+        _cors_origins = [o.strip().rstrip("/") for o in _origins_raw.split(",") if o.strip().rstrip("/")]
+        # Keep local dev working without requiring the user to list every localhost port
+        _local = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
+        for _o in _local:
+            if _o not in _cors_origins:
+                _cors_origins.append(_o)
+        _supports_credentials = True
+    CORS(app, resources={r"/api/*": {
+        "origins": _cors_origins,
+        "supports_credentials": _supports_credentials,
+        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+        "expose_headers": ["Content-Type", "Authorization"],
+        "max_age": 86400,
+    }})
     jwt.init_app(app)
     mail.init_app(app)
 
