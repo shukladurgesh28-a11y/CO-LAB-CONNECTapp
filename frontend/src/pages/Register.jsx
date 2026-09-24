@@ -114,6 +114,23 @@ export default function Register() {
                 </div>
               )}
 
+              <div className="mt-4 rounded-xl bg-indigo-50 border border-indigo-100 p-3">
+                <p className="text-[11px] font-bold tracking-widest text-indigo-600">DEMO QUICK-FILL</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => {
+                    const s = Date.now().toString().slice(-6);
+                    setForm({ name: `Demo Customer ${s}`, email: `demo.customer.${s}@example.com`, phone: `9${s}0101`, password: 'CoLab!Demo2026', confirmPassword: 'CoLab!Demo2026', role: 'customer' });
+                    setError('');
+                  }} className="px-3 py-2 rounded-xl bg-white border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-50">Demo Customer</button>
+                  <button type="button" onClick={() => {
+                    const s = Date.now().toString().slice(-6);
+                    setForm({ name: `Demo Worker ${s}`, email: `demo.worker.${s}@example.com`, phone: `9${s}0102`, password: 'CoLab!Demo2026', confirmPassword: 'CoLab!Demo2026', role: 'worker' });
+                    setError('');
+                  }} className="px-3 py-2 rounded-xl bg-white border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-50">Demo Worker</button>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5">Fills unique email/phone so you can register repeatedly. After submit you’ll verify OTP, then sign in and appear in Admin → Users.</p>
+              </div>
+
               <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Full name *</label>
