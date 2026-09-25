@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: colab-connect-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn.conf.py run:app
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOW_SQLITE_FALLBACK
+        value: "false"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
+      - key: COMMISSION_RATE
+        value: "0.10"
+      - key: WELFARE_RATE
+        value: "0.05"
+      - key: TAX_RATE
+        value: "0.00"
+      - key: COMMISSION_INCLUDE_MATERIAL
+        value: "false"
+      - key: PAYMENT_MODE
+        value: sandbox
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: ""
