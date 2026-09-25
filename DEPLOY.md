@@ -8,7 +8,7 @@ Free-tier, single-owner-friendly stack. Stay on free plans and this costs nothin
 | Backend   | **Render**  | Flask + gunicorn; the **root** `render.yaml` blueprint defines the API service. |
 | Database  | **Supabase**| Managed Postgres with RLS (schema + migration in `backend/supabase/`).|
 | Auth emails | Resend (free 100/day) | OTP delivery. Sandbox mode logs codes to API anyway — no account needed to start. |
-| Files/notify | Firebase / Supabase Storage (optional) | Skipped cleanly when credentials are absent. |
+| Files/notify | Supabase Realtime (optional) | Notifications are DB-backed; polling fallback when Realtime is off. |
 
 > Render only reads a Blueprint from the **repository root** — never from a
 > subfolder. `backend/render.yaml` is a retired stub; it used to carry a
@@ -111,7 +111,7 @@ Otherwise:
 
 5 cuts to remember:
 - **Python version:** Render's default for new services is 3.13, which has no
-  wheels for the pinned `numpy==1.26.4` / `pandas==2.2.3` / `scikit-learn==1.4.2`
+  wheels for the pinned `numpy==1.26.4` / `scikit-learn==1.4.2`
   — the build silently falls back to a source compile and fails. Pin
   `PYTHON_VERSION=3.12.8` (local dev is 3.12).
 - **Memory:** a booted worker costs **~153 MB RSS** (measured). Free plan caps

@@ -31,7 +31,7 @@ OTP verification is rate-limited by `OTP_MAX_ATTEMPTS` and `OTP_RESEND_COOLDOWN_
 
 Authorized JSON exports are available through `/api/exports?resource=bookings`, `/api/exports?resource=requests`, and `/api/exports?resource=history`.
 
-The notification database is authoritative. Firebase push delivery is an optional adapter and is not live until `FIREBASE_CREDENTIALS_PATH` points to valid server-only credentials. The frontend continues to use Supabase Realtime when configured, with polling fallback.
+The notification database is authoritative; notifications are stored in Postgres and the frontend uses Supabase Realtime when configured, with polling fallback. There is no Firebase push adapter in the code — `FIREBASE_CREDENTIALS_PATH` is retained only for forward compatibility, and `firebase-admin` is not installed. Adding push later means adding the dependency back alongside a real adapter.
 
 Worker availability supports weekly slots plus `effective_from`, `effective_until`, and `is_available=false` leave ranges. Matching excludes workers whose explicit slot does not cover the requested date/time.
 

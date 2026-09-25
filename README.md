@@ -11,7 +11,7 @@ CO-LAB CONNECT is a cooperative-owned digital service marketplace connecting hou
 | Frontend | React.js + Tailwind CSS (Vite) |
 | Backend | Python + Flask (REST API) |
 | Database | Supabase PostgreSQL via SQLAlchemy (SQLite remains available for tests) |
-| AI/ML | Scikit-learn, Pandas, NumPy |
+| AI/ML | Scikit-learn, NumPy |
 | Maps | OpenStreetMap (Leaflet) |
 | Auth | OTP + JWT |
 | Payments | UPI-compatible sandbox |
