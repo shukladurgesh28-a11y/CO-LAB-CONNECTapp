@@ -72,7 +72,7 @@ function ProtectedRoute({ children, allowedRoles }) {
       customer: '/customer/dashboard',
       worker: '/worker/dashboard',
       cooperative_admin: '/cooperative',
-      federation_admin: '/cooperative',
+      federation_admin: '/federation/dashboard',
       platform_admin: '/admin',
     };
     return <Navigate to={redirectMap[user?.role] || '/'} replace />;
