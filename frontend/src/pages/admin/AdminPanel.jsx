@@ -33,12 +33,12 @@ const TAB_ICONS = {
 };
 
 const ORG_RULES = [
-  { n: '1', t: 'Federation sits on top', d: 'A federation oversees many societies (co-ops). It sees network-wide demand, workforce and revenue — it never allocates a single job directly.' },
+  { n: '1', t: 'Federation sits on top', d: 'A federation oversees many societies (co-ops). It sees network-wide demand, workforce and revenue — and can lend workers across its societies when one is short (HR pool).' },
   { n: '2', t: 'Society = Co-op (same thing)', d: '“Society” and “Cooperative” are the same registry (cooperatives table). A society owns its verified workers, reviews customer requests in its area, and allocates jobs.' },
   { n: '3', t: 'Worker belongs to one society', d: 'Every worker row carries one cooperative_id. Verification, availability and workload are managed by that society.' },
-  { n: '4', t: 'Request flows down, never sideways', d: 'Customer request → lands in one society → AI ranks that society’s workers → society (or worker direct-accept) allocates → booking → payout. A society never touches another society’s workers.' },
+  { n: '4', t: 'Request normally flows down, federation can lend sideways', d: 'Customer request → lands in one society → AI ranks that society’s workers → society (or worker direct-accept) allocates → booking. If that society is short, its federation can allocate a worker from another society in the same federation.' },
   { n: '5', t: 'Money is computed once, server-side', d: 'Commission 10% + welfare 2% on every job. Worker payout = total − commission − welfare. The panel only displays backend numbers.' },
-  { n: '6', t: 'One panel, three manager views', d: 'Platform admin sees everything. Federation managers see their societies. Society managers see their workers and queue. Same tabs, scoped data.' },
+  { n: '6', t: 'One panel, three manager views', d: 'Platform admin sees everything. Federation managers see their societies and can lend. Society managers see their workers and queue. Same tabs, scoped data.' },
 ];
 
 const ROLE_BADGE = {

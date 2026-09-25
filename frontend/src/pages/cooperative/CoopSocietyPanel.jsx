@@ -42,14 +42,27 @@ export default function CoopSocietyPanel() {
   const [overview, setOverview] = useState(null);
   const [requests, setRequests] = useState([]);
 
+  const isFed = user?.role === 'federation_admin';
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [dashRes, reqRes] = await Promise.all([
-        api.get('/api/cooperative/dashboard').catch(()=>({data:{}})),
+      let dashRes;
+      try {
+        dashRes = await api.get(isFed ? '/api/federation/dashboard' : '/api/cooperative/dashboard');
+      } catch {
+        try { dashRes = await api.get('/api/admin/overview'); } catch { dashRes = {data:{}}; }
+      }
+      const [reqRes] = await Promise.all([
         api.get('/api/requests', { params: { status: 'all', limit: 100 } }).catch(()=>({data:{data:[]}})),
       ]);
-      setOverview(dashRes.data?.data || dashRes.data);
+      const d = dashRes.data?.data || dashRes.data;
+      // Normalize federation vs cooperative shape for the 8 cards
+      if(isFed && d && !d.workers_total && d.total_workers){
+        d.workers_total = d.total_workers; d.workers_available = d.workers_available || 0;
+        d.pending_requests = d.pending_requests || 0; d.active_bookings = d.active_bookings || 0;
+        d.total_revenue = d.total_revenue || 0;
+      }
+      setOverview(d);
       setRequests(reqRes.data?.data || reqRes.data?.requests || []);
     } catch (e) {
       toast.error('Failed to load cooperative data');
@@ -62,7 +75,7 @@ export default function CoopSocietyPanel() {
 
   if(loading) return <div className="max-w-7xl mx-auto space-y-4"><CardSkeleton /><CardSkeleton /></div>;
 
-  const coopName = overview?.cooperative?.name || overview?.cooperative_name || 'Co-Op & Society';
+  const coopName = overview?.cooperative?.name || overview?.cooperative_name || (isFed ? (overview?.federations?.[0]?.name || 'Federation') : 'Co-Op & Society');
   const fedName = overview?.federation?.name || '';
 
   return (
@@ -70,9 +83,9 @@ export default function CoopSocietyPanel() {
       {/* Header — single, not duplicated */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-slate-900">Co-Op & Society Operations</h1>
-          <p className="text-sm text-slate-500">{coopName}{fedName?` • ${fedName}`:''} • {user?.role?.replace('_',' ')}</p>
-          <p className="text-xs text-slate-400 mt-1">Operational control center — use the left sidebar to navigate. Customer and Worker panels are separate and not mixed.</p>
+          <h1 className="text-xl font-black text-slate-900">{isFed ? 'Federation Operations — HR Pool' : 'Co-Op & Society Operations'}</h1>
+          <p className="text-sm text-slate-500">{coopName}{fedName?` • ${fedName}`:''} • {user?.role?.replace('_',' ')}{isFed ? ' • can lend workers across societies in its federation' : ''}</p>
+          <p className="text-xs text-slate-400 mt-1">{isFed ? 'Cross-society lending when one society is short — societies still own their workers.' : 'Operational control center — use the left sidebar to navigate. Customer and Worker panels are separate and not mixed.'}</p>
         </div>
         <Link to="/admin" className="text-xs font-bold text-indigo-600 hover:underline">Go to Admin →</Link>
       </div>

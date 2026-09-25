@@ -28,6 +28,18 @@ def get_user_cooperative(user_id):
     return user, None
 
 
+def _federation_coop_ids(user):
+    """All society ids in the federations this user manages (for cross-society lending)."""
+    try:
+        feds = user.administered_federations
+        ids = []
+        for f in feds:
+            ids.extend([c.id for c in f.cooperatives])
+        return set(ids)
+    except Exception:
+        return set()
+
+
 @cooperative_bp.route("/dashboard", methods=["GET"])
 @jwt_required()
 def dashboard():
@@ -196,6 +208,20 @@ def list_requests():
     try:
         user_id = int(get_jwt_identity())
         user, coop = get_user_cooperative(user_id)
+        # Federation HR-pool: show all requests in their federation
+        if user and user.role == "federation_admin":
+            allowed = _federation_coop_ids(user)
+            if not allowed:
+                return success_response([], "Requests retrieved")
+            status = request.args.get("status", "pending")
+            limit = request.args.get("limit", type=int, default=100)
+            limit = max(1, min(limit, 200))
+            query = ServiceRequest.query.filter(ServiceRequest.cooperative_id.in_(allowed))
+            if status != "all":
+                query = query.filter_by(status=status)
+            requests_list = query.order_by(ServiceRequest.created_at.desc()).limit(limit).all()
+            return success_response([sr.to_dict() for sr in requests_list], "Requests retrieved")
+
         if not coop:
             return error_response("No cooperative found", 404)
 
@@ -221,7 +247,7 @@ def create_allocation():
     try:
         user_id = int(get_jwt_identity())
         user, coop = get_user_cooperative(user_id)
-        if not coop and (not user or user.role != "platform_admin"):
+        if not coop and user.role not in ("platform_admin", "federation_admin"):
             return error_response("No cooperative found", 404)
 
         data = request.get_json()
@@ -237,10 +263,17 @@ def create_allocation():
         sr = ServiceRequest.query.get(request_id)
         if not sr:
             return error_response("Service request not found", 404)
+        # Federation HR-pool: federation managers can allocate across any society in their federation
         if user.role == "platform_admin":
             coop = Cooperative.query.get(sr.cooperative_id)
             if not coop:
                 return error_response("Service request has no cooperative", 404)
+        elif user.role == "federation_admin":
+            allowed = _federation_coop_ids(user)
+            if sr.cooperative_id not in allowed:
+                return error_response("Service request not in your federation", 403)
+            # Use the request's own society as the allocation's society
+            coop = Cooperative.query.get(sr.cooperative_id)
         elif sr.cooperative_id != coop.id:
             return error_response("Service request does not belong to this cooperative", 403)
 
@@ -251,7 +284,12 @@ def create_allocation():
         if not worker:
             return error_response("Worker not found", 404)
 
-        if worker.cooperative_id != coop.id:
+        # Federation can lend workers across its societies; society managers only within own society
+        if user.role == "federation_admin":
+            allowed = _federation_coop_ids(user)
+            if worker.cooperative_id not in allowed:
+                return error_response("Worker not in your federation", 403)
+        elif worker.cooperative_id != coop.id:
             return error_response("Worker does not belong to this cooperative", 403)
         if worker.verification_status != "verified":
             return error_response("Worker is not verified", 409)
