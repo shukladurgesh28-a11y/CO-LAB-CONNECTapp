@@ -19,10 +19,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const demoAccounts = [
-    { label: 'Admin', email: 'admin@demo.com', password: 'CoLab!Demo2026', desc: 'Platform admin' },
+    { label: 'Admin', email: 'admin@collabconnect.local', password: 'CoLab!Demo2026', desc: 'Platform admin' },
     { label: 'Customer', email: 'customer@demo.com', password: 'CoLab!Demo2026', desc: 'Request services' },
     { label: 'Worker', email: 'worker@demo.com', password: 'CoLab!Demo2026', desc: 'Find work' },
-    { label: 'Co-op Admin', email: 'coop@demo.com', password: 'CoLab!Demo2026', desc: 'Manage workforce' },
     { label: 'Federation', email: 'federation@demo.com', password: 'CoLab!Demo2026', desc: 'Network view' },
   ];
 
@@ -238,10 +237,9 @@ export default function Login() {
                   Demo accounts & passwords <span className="text-slate-400">▾</span>
                 </summary>
                 <div className="px-4 pb-4 space-y-1 text-xs font-mono text-slate-600 border-t border-slate-200 bg-white">
-                  <div className="pt-3">admin@demo.com / CoLab!Demo2026</div>
+                  <div className="pt-3">admin@collabconnect.local / CoLab!Demo2026</div>
                   <div>customer@demo.com / CoLab!Demo2026</div>
                   <div>worker@demo.com / CoLab!Demo2026</div>
-                  <div>coop@demo.com / CoLab!Demo2026</div>
                   <div>federation@demo.com / CoLab!Demo2026</div>
                 </div>
               </details>
