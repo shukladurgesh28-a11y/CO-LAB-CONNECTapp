@@ -41,8 +41,10 @@ class AdminTestCase(unittest.TestCase):
                     "completed_jobs", "welfare_fund", "open_disputes"):
             self.assertIn(key, data)
 
-        # Non-platform roles are refused
-        for email in ("customer@demo.com", "worker@demo.com", "coop@demo.com"):
+        # The admin panel intentionally serves every org admin role
+        # (app/routes/admin.py: ORG_ADMIN_ROLES = platform / federation /
+        # cooperative). Only non-admin roles must be refused.
+        for email in ("customer@demo.com", "worker@demo.com"):
             token = self.login(email)
             denied = self.call("GET", "/api/admin/overview", token=token)
             self.assertEqual(denied.status_code, 403)
@@ -97,7 +99,7 @@ class AdminTestCase(unittest.TestCase):
         self.assertEqual(detail.get_json()["data"]["worker_id"], worker_id)
         self.assertEqual(detail.get_json()["data"]["status"], "confirmed")
 
-    def test_ai_assist_requires_key_and_platform_role(self):
+    def test_ai_assist_requires_key_and_admin_role(self):
         admin = self.login("admin@demo.com")
         # No key in testing env -> 503 with graceful message, never a crash.
         res = self.call("POST", "/api/admin/ai-assist", {"question": "Where is demand highest?"}, admin)
@@ -105,10 +107,16 @@ class AdminTestCase(unittest.TestCase):
         status = self.call("GET", "/api/admin/ai-assist", token=admin)
         self.assertEqual(status.status_code, 200)
         self.assertFalse(status.get_json()["data"]["configured"])
-        # Non-platform roles are refused.
+        # Society admin is an org admin, so it passes the role gate and then
+        # gets the same 503 not-configured response as the platform admin.
         coop = self.login("coop@demo.com")
-        denied = self.call("POST", "/api/admin/ai-assist", {"question": "Hi"}, coop)
-        self.assertEqual(denied.status_code, 403)
+        allowed = self.call("POST", "/api/admin/ai-assist", {"question": "Hi"}, coop)
+        self.assertEqual(allowed.status_code, 503, allowed.get_json())
+        # Non-admin roles are refused before any config check.
+        for email in ("customer@demo.com", "worker@demo.com"):
+            denied = self.call("POST", "/api/admin/ai-assist", {"question": "Hi"},
+                               self.login(email))
+            self.assertEqual(denied.status_code, 403)
         # Empty question rejected.
         empty = self.call("POST", "/api/admin/ai-assist", {"question": "  "}, admin)
         self.assertEqual(empty.status_code, 400)
@@ -135,10 +143,14 @@ class AdminTestCase(unittest.TestCase):
         self.assertEqual(stats.status_code, 200)
         self.assertIn("customer", stats.get_json()["data"]["by_role"])
 
-        # Society admin cannot use platform endpoints
+        # Society admin is an org admin, so the shared panel is allowed.
         coop = self.login("coop@demo.com")
-        denied = self.call("GET", "/api/admin/users/stats", token=coop)
-        self.assertEqual(denied.status_code, 403)
+        allowed = self.call("GET", "/api/admin/users/stats", token=coop)
+        self.assertEqual(allowed.status_code, 200)
+        # Non-admin roles stay refused.
+        for email in ("customer@demo.com", "worker@demo.com"):
+            denied = self.call("GET", "/api/admin/users/stats", token=self.login(email))
+            self.assertEqual(denied.status_code, 403)
 
 
 if __name__ == "__main__":

@@ -4,15 +4,15 @@ Free-tier, single-owner-friendly stack. Stay on free plans and this costs nothin
 
 | Piece     | Host        | Why / notes                                                        |
 |-----------|-------------|--------------------------------------------------------------------|
-| Frontend  | **Render** (static site) | React/Vite SPA, `rootDir: frontend`. The existing **Vercel** deploy keeps working in parallel. |
-| Backend   | **Render**  | Flask + gunicorn; the **root** `render.yaml` blueprint defines both services. |
+| Frontend  | **Vercel**  | Static React/Vite SPA; `frontend/vercel.json` handles SPA rewrites. |
+| Backend   | **Render**  | Flask + gunicorn; the **root** `render.yaml` blueprint defines the API service. |
 | Database  | **Supabase**| Managed Postgres with RLS (schema + migration in `backend/supabase/`).|
 | Auth emails | Resend (free 100/day) | OTP delivery. Sandbox mode logs codes to API anyway — no account needed to start. |
 | Files/notify | Firebase / Supabase Storage (optional) | Skipped cleanly when credentials are absent. |
 
-> **Both services live in one file.** Render only reads `render.yaml` from the
-> **repository root** — never from a subfolder. `backend/render.yaml` is a
-> retired stub; it used to carry a committed `[FILL IN PASSWORD]` placeholder.
+> Render only reads a Blueprint from the **repository root** — never from a
+> subfolder. `backend/render.yaml` is a retired stub; it used to carry a
+> committed `[FILL IN PASSWORD]` placeholder.
 
 > **Money rule:** all amounts are computed server-side via
 > `backend/app/services/pricing.py` (single source of truth, `Decimal`).
@@ -97,7 +97,8 @@ Otherwise:
 | `SECRET_KEY` | random hex | generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `JWT_SECRET_KEY` | random hex | same generator (different value) |
 | `DEMO_PASSWORD` | `CoLab!Demo2026` | keep `CoLab!Demo2026` (login buttons hardcode it) |
-| `CORS_ORIGINS` | `*` | `https://colab-connect-web.onrender.com,https://colab-connect-three.vercel.app` |
+| `CORS_ORIGINS` | `*` | your Vercel origin, e.g. `https://colab-connect-three.vercel.app` |
+| `OPENCODE_ZEN_API_KEY` | (blank) | backend-only; without it the AI assistant returns 503 |
 | `OTP_EXPOSE_IN_RESPONSE` | `true` | `true` in demo mode; `false` once real mail is wired |
 | `SUPABASE_URL` | `https://<project>.supabase.co` | same (anon key only) |
 | `SUPABASE_PUBLISHABLE_KEY` | your anon key | same |
@@ -125,51 +126,28 @@ Otherwise:
   `backend/app/__init__.py` refuses to boot without them (see
   ProductionConfig). Generate both, never commit them.
 
-## 3. Frontend — Render static site
+## 3. Frontend — Vercel
 
-The root `render.yaml` already defines this service (`colab-connect-web`), so
-creating it is just: Render -> **New -> Static Site** (or let the Blueprint do it).
-
-1. **New -> Static Site** -> connect the GitHub repo.
+1. Push the repo to GitHub (Section 0), then **Vercel → Add New Project →
+   Import** the repo.
 2. **Root directory:** `frontend`
-3. **Build command:** `npm ci && npm run build`
-4. **Publish directory:** `./dist`
-5. **Environment variables:**
+3. Framework preset auto-detected as **Vite**.
+4. Build command `npm ci && npm run build`, output `dist`.
+5. **Environment variables** (Vercel):
 
 | Variable | Value |
 |---|---|
 | `VITE_API_URL` | `https://colab-connect-api-wzee.onrender.com/api` |
 | `NODE_VERSION` | `22` (Vite 8 needs `>=22.12`; pin it so the default cannot drift) |
 
-6. **Rewrites** - Render adds **no** SPA fallback on its own, so add
-   `/*` -> `/index.html`. Without it, refreshing a deep link like
-   `/customer/bookings/123` returns 404.
-
-> `VITE_API_URL` must be the **full path to `/api`**; Vite inlines it at
-> build time (`frontend/src/api/axios.js`). Its value is identical to the
-> hardcoded fallback in that file, so a missing var degrades gracefully
-> instead of pointing the app at `localhost`.
-
-### 3b. Frontend - Vercel (optional, already live)
-
-1. Push the repo to GitHub (Section 0), then **Vercel → Add New Project →
-   Import** the repo.
-2. **Root directory:** `frontend`
-3. Framework preset auto-detected as **Vite**.
-4. Build command `npm run build`, output `dist`.
-5. **Environment variables** (Vercel):
-
-| Variable | Value |
-|---|---|
-| `VITE_API_URL` | your Render https URL + `/api`, e.g. `https://colab-connect-api-wzee.onrender.com/api` |
-
    > The value must be the **full path to `/api`**. Vite injects it at build-time
    > via `import.meta.env.VITE_API_URL` (see `frontend/src/api/axios.js`).
+   > `frontend/.env` is git-ignored, so set this in the Vercel dashboard — a
+   > missing value falls back to the hardcoded localhost/Render host in axios.js.
 
 6. Deploy. `frontend/vercel.json` adds the SPA rewrite + caching headers so
-   deep links (`/customer/bookings/123`) work on refresh.
-
-Both frontends can run at once - the API's `CORS_ORIGINS` lists both origins.
+   deep links (`/customer/bookings/123`) work on refresh, and proxies `/api/*`
+   to Render.
 
 ## 4. Optional — Send OTP mail via Resend (free)
 
