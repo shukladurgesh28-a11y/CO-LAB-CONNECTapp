@@ -4,11 +4,15 @@ Free-tier, single-owner-friendly stack. Stay on free plans and this costs nothin
 
 | Piece     | Host        | Why / notes                                                        |
 |-----------|-------------|--------------------------------------------------------------------|
-| Frontend  | **Vercel**  | Static React/Vite SPA; `frontend/vercel.json` handles SPA rewrites. |
-| Backend   | **Render**  | Flask + gunicorn; `backend/render.yaml` is a deployable blueprint.  |
+| Frontend  | **Render** (static site) | React/Vite SPA, `rootDir: frontend`. The existing **Vercel** deploy keeps working in parallel. |
+| Backend   | **Render**  | Flask + gunicorn; the **root** `render.yaml` blueprint defines both services. |
 | Database  | **Supabase**| Managed Postgres with RLS (schema + migration in `backend/supabase/`).|
 | Auth emails | Resend (free 100/day) | OTP delivery. Sandbox mode logs codes to API anyway — no account needed to start. |
 | Files/notify | Firebase / Supabase Storage (optional) | Skipped cleanly when credentials are absent. |
+
+> **Both services live in one file.** Render only reads `render.yaml` from the
+> **repository root** — never from a subfolder. `backend/render.yaml` is a
+> retired stub; it used to carry a committed `[FILL IN PASSWORD]` placeholder.
 
 > **Money rule:** all amounts are computed server-side via
 > `backend/app/services/pricing.py` (single source of truth, `Decimal`).
@@ -63,8 +67,18 @@ git push -u origin main
 
 ## 2. Backend — Render (API)
 
-Fastest path — click **New → Blueprint** on Render and point at the repo; it
-reads `backend/render.yaml`. Otherwise:
+> **Current state:** `colab-connect-api-wzee` already exists in the Render
+> workspace and is **suspended by its owner** (`x-render-routing:
+> suspend-by-user` → "Service Suspended"). Resume it rather than creating a
+> new service: the frontend already hardcodes this host in
+> `frontend/src/api/axios.js` and `frontend/vercel.json`.
+
+**Resume first:** Render → your service → **Resume**. Then add the
+`sync: false` env vars below and hit **Manual Deploy → Deploy latest commit**.
+
+Fastest path for a *new* workspace — Render → **New → Blueprint** → point at
+the repo; it reads the root `render.yaml` and provisions both services.
+Otherwise:
 
 1. **New → Web Service** → connect GitHub repo.
 2. **Root directory:** `backend`
@@ -75,32 +89,68 @@ reads `backend/render.yaml`. Otherwise:
 
 | Variable | Local/dev value | Production value |
 |---|---|---|
+| `PYTHON_VERSION` | (n/a) | `3.12.8` — **required**, see note below |
+| `WEB_CONCURRENCY` | (n/a) | `1` on free; raise to `2`+ after upgrading |
 | `SUPABASE_DB_URL` | (blank local) | supabase `postgresql://...` with real password |
 | `DATABASE_URL` | `sqlite:///collabconnect.db` | same as `SUPABASE_DB_URL` (used when Supabase empty) |
 | `ALLOW_SQLITE_FALLBACK` | `true` | leave unset / `false` |
 | `SECRET_KEY` | random hex | generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `JWT_SECRET_KEY` | random hex | same generator (different value) |
 | `DEMO_PASSWORD` | `CoLab!Demo2026` | keep `CoLab!Demo2026` (login buttons hardcode it) |
-| `CORS_ORIGINS` | `*` | your Vercel URL, e.g. `https://colab-connect.vercel.app` |
+| `CORS_ORIGINS` | `*` | `https://colab-connect-web.onrender.com,https://colab-connect-three.vercel.app` |
+| `OTP_EXPOSE_IN_RESPONSE` | `true` | `true` in demo mode; `false` once real mail is wired |
 | `SUPABASE_URL` | `https://<project>.supabase.co` | same (anon key only) |
 | `SUPABASE_PUBLISHABLE_KEY` | your anon key | same |
 | `PAYMENT_MODE` | `sandbox` | `sandbox` until you wire a real gateway (Task 5) |
 | `COMMISSION_RATE` | `0.10` | `0.10` |
-| `WELFARE_RATE` | `0.05` | `0.05` (keep consistent with config.py) |
+| `WELFARE_RATE` | `0.02` | `0.02` (matches `pricing.py`, **not** `0.05`) |
 | `TAX_RATE` | `0.00` | `0.00` (set `0.18` only when you enable GST end-to-end) |
 | `GOOGLE_MAPS_API_KEY` | (blank) | your key (matching/geocoding) |
 | `FIREBASE_CREDENTIALS_PATH` | (blank) | (blank) unless you use FCM |
 
-3 cuts to remember:
+5 cuts to remember:
+- **Python version:** Render's default for new services is 3.13, which has no
+  wheels for the pinned `numpy==1.26.4` / `pandas==2.2.3` / `scikit-learn==1.4.2`
+  — the build silently falls back to a source compile and fails. Pin
+  `PYTHON_VERSION=3.12.8` (local dev is 3.12).
+- **Memory:** a booted worker costs **~153 MB RSS** (measured). Free plan caps
+  at 512 MB, so `WEB_CONCURRENCY=1` is deliberate; two workers plus a heavy
+  `/api/analytics/demand/forecast` call gets the container OOM-killed.
 - **Health check:** the app exposes `GET /api/health` — set Render health check
   to `/api/health` so the service stays awake instead of being flagged dead.
 - **Serving:** Render serves the API only. Do **not** `flask run`; use the
-  gunicorn start command above.
+  gunicorn start command above. (Gunicorn is Linux-only, so it cannot be
+  smoke-tested on Windows — it needs `fcntl`.)
 - **Secrets:** `SECRET_KEY`/`JWT_SECRET_KEY` are **required** in production —
   `backend/app/__init__.py` refuses to boot without them (see
   ProductionConfig). Generate both, never commit them.
 
-## 3. Frontend — Vercel
+## 3. Frontend — Render static site
+
+The root `render.yaml` already defines this service (`colab-connect-web`), so
+creating it is just: Render -> **New -> Static Site** (or let the Blueprint do it).
+
+1. **New -> Static Site** -> connect the GitHub repo.
+2. **Root directory:** `frontend`
+3. **Build command:** `npm ci && npm run build`
+4. **Publish directory:** `./dist`
+5. **Environment variables:**
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | `https://colab-connect-api-wzee.onrender.com/api` |
+| `NODE_VERSION` | `22` (Vite 8 needs `>=22.12`; pin it so the default cannot drift) |
+
+6. **Rewrites** - Render adds **no** SPA fallback on its own, so add
+   `/*` -> `/index.html`. Without it, refreshing a deep link like
+   `/customer/bookings/123` returns 404.
+
+> `VITE_API_URL` must be the **full path to `/api`**; Vite inlines it at
+> build time (`frontend/src/api/axios.js`). Its value is identical to the
+> hardcoded fallback in that file, so a missing var degrades gracefully
+> instead of pointing the app at `localhost`.
+
+### 3b. Frontend - Vercel (optional, already live)
 
 1. Push the repo to GitHub (Section 0), then **Vercel → Add New Project →
    Import** the repo.
@@ -111,13 +161,15 @@ reads `backend/render.yaml`. Otherwise:
 
 | Variable | Value |
 |---|---|
-| `VITE_API_URL` | your Render https URL, e.g. `https://colab-connect-api.onrender.com/api` |
+| `VITE_API_URL` | your Render https URL + `/api`, e.g. `https://colab-connect-api-wzee.onrender.com/api` |
 
    > The value must be the **full path to `/api`**. Vite injects it at build-time
    > via `import.meta.env.VITE_API_URL` (see `frontend/src/api/axios.js`).
 
 6. Deploy. `frontend/vercel.json` adds the SPA rewrite + caching headers so
    deep links (`/customer/bookings/123`) work on refresh.
+
+Both frontends can run at once - the API's `CORS_ORIGINS` lists both origins.
 
 ## 4. Optional — Send OTP mail via Resend (free)
 
@@ -154,7 +206,9 @@ In the browser:
 
 - [ ] `.env` files are git-ignored (both `backend/.env` and `frontend/.env`).
 - [ ] Real `SECRET_KEY`/`JWT_SECRET_KEY` in production (not the demo defaults).
-- [ ] `CORS_ORIGINS` set to your exact frontend origin (not `*`).
+- [ ] `CORS_ORIGINS` set to your exact frontend origin(s) (not `*`).
+- [ ] `OTP_EXPOSE_IN_RESPONSE=false` once real mail is wired — while it is
+      `true` the OTP is returned in the API response and readable by anyone.
 - [ ] Supabase **service-role key** lives backend-only; only the anon
       (publishable) key reaches the browser.
 - [ ] `PAYMENT_MODE=sandbox` until a real gateway is wired (Task 5).

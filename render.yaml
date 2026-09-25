@@ -1,47 +1,135 @@
+# =============================================================================
+# CO-LAB CONNECT — Render Blueprint (repo root; this is the file Render reads)
+# =============================================================================
+# Deploys BOTH halves of the app:
+#   1. colab-connect-api-wzee  -> Flask REST API (gunicorn), serves /api/*
+#   2. colab-connect-web       -> Vite SPA served as a Render static site
+#
+#   Render -> New -> Blueprint -> point at this repo.
+#
+# Money rates MUST stay in sync with backend/config.py + app/services/pricing.py
+# (COMMISSION_RATE 0.10, WELFARE_RATE 0.02, TAX_RATE 0.00). pricing.py is the
+# single source of truth and its defaults are Decimal("0.10")/Decimal("0.02").
+# Do not "tune" WELFARE_RATE here without changing pricing.py too.
+# =============================================================================
 services:
+  # ===========================================================================
+  # 1. API — Flask + gunicorn
+  # ===========================================================================
   - type: web
-    name: colab-connect-api
+    # NOTE: this service already exists in the Render workspace and is currently
+    # suspended ("Service Suspended" / x-render-routing: suspend-by-user).
+    # RESUME it in the dashboard and set the sync:false vars below — do not try
+    # to re-create it, the name is taken and the frontend already points here
+    # (see frontend/src/api/axios.js fallback + frontend/vercel.json).
+    name: colab-connect-api-wzee
     runtime: python
-    plan: free
+    plan: free # 512 MB RAM, sleeps after 15 min idle — fine for demo traffic
+    # The Flask app + requirements.txt live in /backend; Render builds there.
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -c gunicorn.conf.py run:app
-    healthCheckPath: /api/health
-    autoDeploy: true
+    # Explicit: Render would otherwise default to Python 3.13, which has no
+    # wheels for numpy==1.26.4 / pandas==2.2.3 / scikit-learn==1.4.2 and the
+    # build would fall back to a long source compile. Local dev is 3.12.
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      # -- Runtime -----------------------------------------------------------
       - key: FLASK_ENV
         value: production
+      # One worker: a booted worker costs ~153 MB RSS (measured), and the free
+      # plan caps at 512 MB. Two workers + a heavy /analytics/demand/forecast
+      # request is an OOM kill. Raise to 2+ once you move off the free plan.
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_TIMEOUT
+        value: "60"
+      # -- Secrets (Render generates strong values; never committed) ---------
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
+      # -- Database: Supabase Postgres connection string ---------------------
+      # create_app() refuses to boot unless this is a postgresql:// URL
+      # (app/__init__.py) — with ALLOW_SQLITE_FALLBACK=false there is no
+      # local-file fallback on Render, so this var is mandatory.
       - key: SUPABASE_DB_URL
         sync: false
       - key: DATABASE_URL
-        sync: false
+        value: ${SUPABASE_DB_URL} # used when SUPABASE_DB_URL is empty
       - key: ALLOW_SQLITE_FALLBACK
         value: "false"
+      # -- CORS: the Render static site + the existing Vercel frontend --------
+      # Comma-separated; app/__init__.py also appends localhost:3000/5173 so
+      # local dev keeps working. Set to "*" only for throwaway demos.
       - key: CORS_ORIGINS
-        sync: false
+        value: https://colab-connect-web.onrender.com,https://colab-connect-three.vercel.app
+      # -- Demo accounts: MUST match the frontend quick-login buttons ---------
       - key: DEMO_PASSWORD
         sync: false
+      # No SMS gateway, so the OTP is returned in the API response and shown in
+      # the UI. Set to "false" once a real mail provider is wired (section 4 of
+      # DEPLOY.md) so codes stop leaking to the client.
+      - key: OTP_EXPOSE_IN_RESPONSE
+        value: "true"
+      # -- Money rates (keep identical to backend/config.py + pricing.py) ------
       - key: COMMISSION_RATE
         value: "0.10"
       - key: WELFARE_RATE
-        value: "0.05"
+        value: "0.02"
       - key: TAX_RATE
         value: "0.00"
       - key: COMMISSION_INCLUDE_MATERIAL
         value: "false"
+      # -- Gateways / notifications (optional in sandbox / DB-only modes) -----
       - key: PAYMENT_MODE
         value: sandbox
+      - key: PAYMENT_GATEWAY_KEY
+        value: ""
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
         sync: false
+      # Backend-only secret. Never expose this to the frontend.
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: GOOGLE_MAPS_API_KEY
-        sync: false
+        value: ""
       - key: FIREBASE_CREDENTIALS_PATH
         value: ""
+
+    # -- Process / health ----------------------------------------------------
+    buildCommand: pip install -r requirements.txt
+    # gunicorn.conf.py binds 0.0.0.0:$PORT (Render injects PORT) and honours
+    # WEB_CONCURRENCY / GUNICORN_TIMEOUT from the env above.
+    startCommand: gunicorn -c gunicorn.conf.py run:app
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # ===========================================================================
+  # 2. Frontend — Vite SPA as a static site
+  # ===========================================================================
+  - type: static
+    name: colab-connect-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    envVars:
+      # Vite inlines this at BUILD time (frontend/src/api/axios.js). Must be the
+      # full path to /api. Same value as the hardcoded fallback in axios.js, so
+      # a missing var degrades to identical behaviour instead of localhost.
+      - key: VITE_API_URL
+        value: https://colab-connect-api-wzee.onrender.com/api
+      # frontend/.env is git-ignored, so the build here runs without it. Pin the
+      # Node major explicitly: Vite 8 requires >=22.12 and Render's default can
+      # drift below that.
+      - key: NODE_VERSION
+        value: "22"
+    # Render does NOT add an SPA fallback on its own — deep links such as
+    # /customer/bookings/123 must be rewritten to the SPA entrypoint or a hard
+    # refresh 404s. Order matters: the /api proxy is listed first.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
