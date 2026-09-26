@@ -100,7 +100,6 @@ class PaymentService:
             service_amount=booking.total_amount or 0,
             material_charges=booking.material_charges or 0,
             commission_rate=current_app.config.get("COMMISSION_RATE", 0.10),
-            welfare_rate=current_app.config.get("WELFARE_RATE", 0.02),
             tax_rate=current_app.config.get("TAX_RATE", 0.0),
             commission_applies_to_material=current_app.config.get(
                 "COMMISSION_INCLUDE_MATERIAL", False
@@ -113,7 +112,6 @@ class PaymentService:
             service_charges=float(parts["service_amount"]),
             material_charges=float(parts["material_charges"]),
             commission_amount=float(parts["commission_amount"]),
-            welfare_amount=float(parts["welfare_amount"]),
             worker_payout=float(parts["worker_payout"]),
             total_amount=float(parts["net_amount"]),
             tax_amount=float(parts["tax_amount"]),

@@ -68,7 +68,6 @@ class Config:
 
     # Money math rates - consumed by app/services/pricing.py (single source of truth)
     COMMISSION_RATE = float(os.getenv("COMMISSION_RATE", "0.10"))
-    WELFARE_RATE = float(os.getenv("WELFARE_RATE", "0.02"))
     TAX_RATE = float(os.getenv("TAX_RATE", "0.0"))
     COMMISSION_INCLUDE_MATERIAL = os.getenv("COMMISSION_INCLUDE_MATERIAL", "false").lower() == "true"
     OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))

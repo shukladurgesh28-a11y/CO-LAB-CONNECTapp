@@ -754,7 +754,6 @@ def requirement_progress(requirement_id):
             return error_response("Unauthorized", 403)
 
         c_rate = current_app.config.get("COMMISSION_RATE", 0.10)
-        w_rate = current_app.config.get("WELFARE_RATE", 0.02)
         t_rate = current_app.config.get("TAX_RATE", 0.0)
         items_payload = []
         est_worker_payout = 0.0
@@ -762,7 +761,7 @@ def requirement_progress(requirement_id):
             base = float(item.service.base_price) if item.service and item.service.base_price else 0.0
             per_worker = compute_invoice(
                 service_amount=base * max(item.duration_days, 1),
-                commission_rate=c_rate, welfare_rate=w_rate, tax_rate=t_rate,
+                commission_rate=c_rate, tax_rate=t_rate,
             )
             item_estimate = float(per_worker["worker_payout"]) * (item.quantity_required or 0)
             est_worker_payout += item_estimate

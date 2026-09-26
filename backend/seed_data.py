@@ -549,7 +549,6 @@ def seed():
                         service_amount=total_price,
                         material_charges=material_charges,
                         commission_rate=app.config.get("COMMISSION_RATE", 0.10),
-                        welfare_rate=app.config.get("WELFARE_RATE", 0.02),
                         tax_rate=app.config.get("TAX_RATE", 0.0),
                         commission_applies_to_material=False,
                     )
@@ -561,7 +560,7 @@ def seed():
 
                     invoice = Invoice(booking_id=booking.id, invoice_number=f"INV-202609-{i:05d}",
                                      service_charges=float(parts["service_amount"]), material_charges=float(parts["material_charges"]),
-                                     commission_amount=float(parts["commission_amount"]), welfare_amount=float(parts["welfare_amount"]),
+                                     commission_amount=float(parts["commission_amount"]),
                                      worker_payout=float(parts["worker_payout"]), total_amount=float(parts["net_amount"]),
                                      tax_amount=float(parts["tax_amount"]), net_amount=float(parts["net_amount"]),
                                      payment_status="paid", issued_at=datetime.now(timezone.utc) - timedelta(days=i))

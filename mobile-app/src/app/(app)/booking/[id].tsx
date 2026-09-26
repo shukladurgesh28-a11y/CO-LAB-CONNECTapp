@@ -62,7 +62,6 @@ export default function BookingDetail() {
           <Text style={styles.h}>Bill (backend priced)</Text>
           <Info label="Service" value={inr(fin.service_charges)} />
           <Info label="Commission" value={inr(fin.commission_amount)} />
-          <Info label="Welfare" value={inr(fin.welfare_amount)} />
           <Info label="Worker payout" value={inr(fin.worker_payout)} />
           <Info label="Total" value={inr(fin.total_amount)} />
         </Card>

@@ -125,13 +125,13 @@ class CrossLoginFlowTestCase(unittest.TestCase):
         self.assertEqual(w_match["status"], "confirmed")
 
         # Worker must see the money/payout breakdown:
-        # Customer amount: 500, Commission: 50, Welfare: 10, Worker Payout: 440
+        # Customer amount: 500, Commission: 50, Worker Payout: 450
         financials = w_match.get("financials")
         self.assertIsNotNone(financials, "Worker must see financials breakdown")
         self.assertEqual(float(financials["service_charges"]), 500.0)
         self.assertEqual(float(financials["commission_amount"]), 50.0)
-        self.assertEqual(float(financials["welfare_amount"]), 10.0)
-        self.assertEqual(float(financials["worker_payout"]), 440.0)
+        self.assertNotIn("welfare_amount", financials)
+        self.assertEqual(float(financials["worker_payout"]), 450.0)
 
         # 7. Worker accepts the booking
         accept_res = self.call(
@@ -167,25 +167,23 @@ class CrossLoginFlowTestCase(unittest.TestCase):
         self.assertEqual(c_comp_data["payment_status"], "paid")
         self.assertEqual(float(c_comp_data["total_amount"]), 500.0)
 
-        # Worker view: sees completed status and payout of 440
+        # Worker view: sees completed status and payout of 450
         w_completed = self.call("GET", f"/api/bookings/{booking_id}", token=worker_token)
         self.assertEqual(w_completed.status_code, 200)
         w_comp_data = w_completed.get_json()["data"]
         self.assertEqual(w_comp_data["status"], "completed")
         w_fin = w_comp_data["financials"]
-        self.assertEqual(float(w_fin["worker_payout"]), 440.0)
+        self.assertEqual(float(w_fin["worker_payout"]), 450.0)
         self.assertEqual(float(w_fin["commission_amount"]), 50.0)
-        self.assertEqual(float(w_fin["welfare_amount"]), 10.0)
 
-        # Admin view: sees customer amount + commission + welfare + worker payout
+        # Admin view: sees customer amount + commission + worker payout
         a_completed = self.call("GET", f"/api/bookings/{booking_id}", token=admin_token)
         self.assertEqual(a_completed.status_code, 200)
         a_comp_data = a_completed.get_json()["data"]
         a_fin = a_comp_data["financials"]
         self.assertEqual(float(a_fin["total_amount"]), 500.0)
         self.assertEqual(float(a_fin["commission_amount"]), 50.0)
-        self.assertEqual(float(a_fin["welfare_amount"]), 10.0)
-        self.assertEqual(float(a_fin["worker_payout"]), 440.0)
+        self.assertEqual(float(a_fin["worker_payout"]), 450.0)
 
         # 10. Customer submits rating/feedback
         rate_res = self.call(
@@ -243,8 +241,7 @@ class CrossLoginFlowTestCase(unittest.TestCase):
             self.assertIsNotNone(db_invoice)
             self.assertEqual(float(db_invoice.service_charges), 500.0)
             self.assertEqual(float(db_invoice.commission_amount), 50.0)
-            self.assertEqual(float(db_invoice.welfare_amount), 10.0)
-            self.assertEqual(float(db_invoice.worker_payout), 440.0)
+            self.assertEqual(float(db_invoice.worker_payout), 450.0)
             self.assertEqual(db_invoice.payment_status, "paid")
 
             # Check Rating references booking_id and worker_id

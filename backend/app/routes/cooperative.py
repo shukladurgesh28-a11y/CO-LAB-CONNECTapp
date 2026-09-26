@@ -7,7 +7,7 @@ from app.models.worker import (
     Worker, WorkerSkill, WorkerCertification, VerificationHistory,
 )
 from app.models.cooperative import Cooperative
-from app.models.booking import ServiceRequest, Allocation, Booking, Rating, AllocationOffer
+from app.models.booking import ServiceRequest, Allocation, Booking, Rating, AllocationOffer, Invoice
 from app.models.dispute import Dispute
 from app.models.welfare import WorkerWelfare
 from app.services.notification_service import NotificationService
@@ -71,6 +71,14 @@ def dashboard():
             Booking.status == "completed",
         ).scalar()
 
+        # Real invoiced money (commission is the only deduction).
+        money = db.session.query(
+            db.func.coalesce(db.func.sum(Invoice.commission_amount), 0),
+            db.func.coalesce(db.func.sum(Invoice.worker_payout), 0),
+        ).join(Booking, Invoice.booking_id == Booking.id).filter(
+            Booking.cooperative_id == coop.id,
+        ).first()
+
         return success_response({
             "cooperative": coop.to_dict(),
             "workers_total": worker_count,
@@ -80,6 +88,8 @@ def dashboard():
             "active_bookings": active_bookings,
             "completed_bookings": completed_bookings,
             "total_revenue": float(total_revenue),
+            "coop_commission": float(money[0] or 0),
+            "worker_payouts": float(money[1] or 0),
             "open_disputes": open_disputes,
             "welfare_records": welfare_records,
         }, "Dashboard retrieved")
@@ -718,10 +728,11 @@ def unified_overview():
             Booking.status == "completed",
         ).scalar() if target_coop_ids else 0
 
-        # Welfare fund (approx 5% or from settlements)
-        welfare_accumulated = round(float(total_revenue) * 0.05, 2)
+        # Commission (10%) is the only deduction, so payouts are revenue minus
+        # commission. The welfare fund has no automatic funding any more.
         coop_commission = round(float(total_revenue) * 0.10, 2)
-        worker_payouts = round(float(total_revenue) * 0.85, 2)
+        worker_payouts = round(float(total_revenue) - coop_commission, 2)
+        welfare_accumulated = 0.0
 
         # 3. Pending requests queue for allocation
         pending_query = ServiceRequest.query.filter(

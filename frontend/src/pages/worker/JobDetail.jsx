@@ -312,12 +312,8 @@ export default function JobDetail() {
                     </div>
                   )}
                   <div className="flex items-center justify-between text-gray-600">
-                    <span>Cooperative commission</span>
+                    <span>Cooperative commission (10%)</span>
                     <span>- ₹{Number(booking.financials.commission_amount || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-gray-600">
-                    <span>Welfare contribution</span>
-                    <span>- ₹{Number(booking.financials.welfare_amount || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between text-green-700 font-semibold pt-2 border-t border-gray-200">
                     <span>Your payout</span>

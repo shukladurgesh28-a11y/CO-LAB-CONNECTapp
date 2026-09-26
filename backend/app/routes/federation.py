@@ -5,7 +5,7 @@ from app import db
 from app.models.user import User
 from app.models.cooperative import Cooperative, Federation
 from app.models.worker import Worker
-from app.models.booking import ServiceRequest, Booking, Rating
+from app.models.booking import ServiceRequest, Booking, Rating, Invoice
 from app.utils.helpers import success_response, error_response
 
 federation_bp = Blueprint("federation", __name__, url_prefix="/api/federation")
@@ -43,6 +43,15 @@ def dashboard():
             Booking.status == "completed",
         ).scalar() if coop_ids else 0
 
+        # Real invoiced money across the federation (commission is the only
+        # deduction).
+        money = db.session.query(
+            db.func.coalesce(db.func.sum(Invoice.commission_amount), 0),
+            db.func.coalesce(db.func.sum(Invoice.worker_payout), 0),
+        ).join(Booking, Invoice.booking_id == Booking.id).filter(
+            Booking.cooperative_id.in_(coop_ids),
+        ).first() if coop_ids else (0, 0)
+
         return success_response({
             "federations": [f.to_dict() for f in federations],
             "total_cooperatives": len(cooperatives),
@@ -51,6 +60,8 @@ def dashboard():
             "total_requests": total_requests,
             "completed_bookings": completed_bookings,
             "total_revenue": float(total_revenue),
+            "coop_commission": float(money[0] or 0),
+            "worker_payouts": float(money[1] or 0),
         }, "Federation dashboard retrieved")
     except Exception as e:
         return error_response(f"Failed to retrieve dashboard: {str(e)}", 500)

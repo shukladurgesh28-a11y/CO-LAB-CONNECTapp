@@ -669,7 +669,6 @@ export default function AdminPanel() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <Card label="Revenue" icon={Wallet} tone="bg-indigo-50 text-indigo-600" value={<CountNum value={payments.totals.revenue} money />} />
                 <Card label="Commission" icon={Wallet} tone="bg-violet-50 text-violet-600" value={<CountNum value={payments.totals.commission} money />} />
-                <Card label="Welfare" icon={HeartHandshake} tone="bg-rose-50 text-rose-600" value={<CountNum value={payments.totals.welfare} money />} />
                 <Card label="Payouts" icon={Wallet} tone="bg-teal-50 text-teal-600" value={<CountNum value={payments.totals.payouts} money />} />
               </div>
               <Section title="Transactions" icon={Wallet}>
@@ -692,7 +691,7 @@ export default function AdminPanel() {
           {tab === 'Welfare' && welfare && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <Card label="Welfare fund (2% of services)" icon={HeartHandshake} tone="bg-rose-50 text-rose-600" value={`₹${Number(welfare.fund_total).toLocaleString('en-IN')}`} />
+                <Card label="Welfare fund" icon={HeartHandshake} tone="bg-rose-50 text-rose-600" value={`₹${Number(welfare.fund_total).toLocaleString('en-IN')}`} />
                 <Card label="Enrollments" icon={Users} tone="bg-indigo-50 text-indigo-600" value={welfare.enrollments.length} />
               </div>
               <Section title="Worker support enrollments" icon={HeartHandshake}>

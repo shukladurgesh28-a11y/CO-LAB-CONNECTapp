@@ -102,11 +102,11 @@ export default function UnifiedDashboard() {
   }));
 
   // Financial split mirrors the backend single source of truth:
-  // commission 10%, welfare 2%, worker payout 88% (backend computes values).
+  // commission 10% is the only deduction, worker payout 90%
+  // (backend computes the values).
   const financialSplitData = [
-    { name: 'Worker Payout (88%)', value: stats.worker_payouts || 8800, color: '#10b981' },
+    { name: 'Worker Payout (90%)', value: stats.worker_payouts || 9000, color: '#10b981' },
     { name: 'Society Commission (10%)', value: stats.coop_commission || 1000, color: '#3b82f6' },
-    { name: 'Federation Welfare Fund (2%)', value: stats.welfare_fund || 200, color: '#8b5cf6' },
   ];
 
   return (
@@ -223,7 +223,7 @@ export default function UnifiedDashboard() {
         <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-white to-purple-50/40">
           <div className="flex items-center justify-between text-gray-500 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-purple-900">
-              Welfare Fund (2%)
+              Welfare Fund
             </span>
             <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
               <HeartHandshake className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function UnifiedDashboard() {
                 <div className="flex items-center justify-between text-emerald-700 font-medium">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    Worker Direct Payout (88%)
+                    Worker Direct Payout (90%)
                   </span>
                   <span>₹{Number(stats.worker_payouts || 0).toFixed(2)}</span>
                 </div>
@@ -320,13 +320,6 @@ export default function UnifiedDashboard() {
                     Society Commission (10%)
                   </span>
                   <span>₹{Number(stats.coop_commission || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-purple-700 font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                    Federation Welfare Fund (5%)
-                  </span>
-                  <span>₹{Number(stats.welfare_fund || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -638,7 +631,7 @@ export default function UnifiedDashboard() {
                 <div>
                   <h3 className="font-bold text-purple-950 text-base">Federation Worker Welfare Vault</h3>
                   <p className="text-xs text-purple-700">
-                    Auto-allocated 2% from every completed customer service
+                    Federation funded - not deducted from worker payouts
                   </p>
                 </div>
                 <div className="p-2 bg-purple-100 text-purple-700 rounded-xl">

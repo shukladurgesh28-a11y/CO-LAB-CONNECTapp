@@ -343,7 +343,6 @@ def update_booking_status(booking_id):
                 service_amount=booking.total_amount or 0,
                 material_charges=booking.material_charges or 0,
                 commission_rate=current_app.config.get("COMMISSION_RATE", 0.10),
-                welfare_rate=current_app.config.get("WELFARE_RATE", 0.02),
                 tax_rate=current_app.config.get("TAX_RATE", 0.0),
                 commission_applies_to_material=current_app.config.get(
                     "COMMISSION_INCLUDE_MATERIAL", False
@@ -356,7 +355,6 @@ def update_booking_status(booking_id):
                     invoice_id=invoice.id if invoice else None,
                     gross_amount=parts["net_amount"],
                     commission=parts["commission_amount"],
-                    welfare=parts["welfare_amount"],
                     worker_payout=parts["worker_payout"],
                     status="settled",
                     settled_at=datetime.now(timezone.utc),

@@ -104,7 +104,6 @@ Otherwise:
 | `SUPABASE_PUBLISHABLE_KEY` | your anon key | same |
 | `PAYMENT_MODE` | `sandbox` | `sandbox` until you wire a real gateway (Task 5) |
 | `COMMISSION_RATE` | `0.10` | `0.10` |
-| `WELFARE_RATE` | `0.02` | `0.02` (matches `pricing.py`, **not** `0.05`) |
 | `TAX_RATE` | `0.00` | `0.00` (set `0.18` only when you enable GST end-to-end) |
 | `GOOGLE_MAPS_API_KEY` | (blank) | your key (matching/geocoding) |
 | `FIREBASE_CREDENTIALS_PATH` | (blank) | (blank) unless you use FCM |

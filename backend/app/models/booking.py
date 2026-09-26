@@ -149,20 +149,17 @@ class Booking(db.Model):
                 from flask import current_app
                 from app.services.pricing import compute_invoice
                 c_rate = current_app.config.get("COMMISSION_RATE", 0.10) if current_app else 0.10
-                w_rate = current_app.config.get("WELFARE_RATE", 0.02) if current_app else 0.02
                 t_rate = current_app.config.get("TAX_RATE", 0.0) if current_app else 0.0
                 parts = compute_invoice(
                     service_amount=self.total_amount,
                     material_charges=self.material_charges or 0,
                     commission_rate=c_rate,
-                    welfare_rate=w_rate,
                     tax_rate=t_rate,
                 )
                 financials = {
                     "service_charges": float(parts["service_amount"]),
                     "material_charges": float(parts["material_charges"]),
                     "commission_amount": float(parts["commission_amount"]),
-                    "welfare_amount": float(parts["welfare_amount"]),
                     "worker_payout": float(parts["worker_payout"]),
                     "total_amount": float(parts["net_amount"]),
                     "tax_amount": float(parts["tax_amount"]),
@@ -312,7 +309,6 @@ class Settlement(db.Model):
     invoice_id = db.Column(db.Integer, db.ForeignKey("invoices.id"), nullable=True)
     gross_amount = db.Column(db.Numeric(12, 2), nullable=True)
     commission = db.Column(db.Numeric(12, 2), nullable=True)
-    welfare = db.Column(db.Numeric(12, 2), nullable=True)
     worker_payout = db.Column(db.Numeric(12, 2), nullable=True)
     status = db.Column(db.String(20), default="pending", nullable=False)
     settled_at = db.Column(db.DateTime, nullable=True)
@@ -326,7 +322,6 @@ class Settlement(db.Model):
             "invoice_id": self.invoice_id,
             "gross_amount": money_float(self.gross_amount),
             "commission": money_float(self.commission),
-            "welfare": money_float(self.welfare),
             "worker_payout": money_float(self.worker_payout),
             "status": self.status,
             "settled_at": self.settled_at.isoformat() if self.settled_at else None,
@@ -372,7 +367,6 @@ class Invoice(db.Model):
     service_charges = db.Column(db.Numeric(12, 2), nullable=True)
     material_charges = db.Column(db.Numeric(12, 2), nullable=True)
     commission_amount = db.Column(db.Numeric(12, 2), nullable=True)
-    welfare_amount = db.Column(db.Numeric(12, 2), nullable=True)
     worker_payout = db.Column(db.Numeric(12, 2), nullable=True)
     total_amount = db.Column(db.Numeric(12, 2), nullable=True)
     tax_amount = db.Column(db.Numeric(12, 2), nullable=True)
@@ -389,7 +383,6 @@ class Invoice(db.Model):
             "service_charges": money_float(self.service_charges),
             "material_charges": money_float(self.material_charges),
             "commission_amount": money_float(self.commission_amount),
-            "welfare_amount": money_float(self.welfare_amount),
             "worker_payout": money_float(self.worker_payout),
             "total_amount": money_float(self.total_amount),
             "tax_amount": money_float(self.tax_amount),

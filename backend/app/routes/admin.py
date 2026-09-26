@@ -64,7 +64,6 @@ def overview():
         active_statuses = ["confirmed", "accepted", "en_route", "service_started", "in_progress"]
         inv = db.session.query(
             func.coalesce(func.sum(Invoice.commission_amount), 0),
-            func.coalesce(func.sum(Invoice.welfare_amount), 0),
             func.coalesce(func.sum(Invoice.worker_payout), 0),
             func.coalesce(func.sum(Invoice.net_amount), 0),
         ).first()
@@ -88,9 +87,9 @@ def overview():
             "workforce_by_status": {s: n for s, n in wf_rows},
             "payments_by_status": {s: n for s, n in pay_rows},
             "commission_total": float(inv[0] or 0),
-            "welfare_fund": float(inv[1] or 0),
-            "payouts_total": float(inv[2] or 0),
-            "revenue_total": float(inv[3] or 0),
+            "welfare_fund": 0.0,
+            "payouts_total": float(inv[1] or 0),
+            "revenue_total": float(inv[2] or 0),
             "open_disputes": Dispute.query.filter(
                 Dispute.status.in_(["open", "under_review", "awaiting_response"])).count(),
             "ratings_count": Rating.query.count(),
@@ -265,7 +264,7 @@ def list_all_payments():
         "payments": out,
         "totals": {
             "commission": float(sum((i.commission_amount or 0) for i in invoices)),
-            "welfare": float(sum((i.welfare_amount or 0) for i in invoices)),
+            "welfare": 0.0,
             "payouts": float(sum((i.worker_payout or 0) for i in invoices)),
             "revenue": float(sum((i.net_amount or 0) for i in invoices)),
         },
@@ -280,9 +279,8 @@ def welfare_overview():
     if err:
         return err
     records = WorkerWelfare.query.order_by(WorkerWelfare.updated_at.desc()).limit(200).all()
-    fund = db.session.query(func.coalesce(func.sum(Invoice.welfare_amount), 0)).scalar()
     return success_response({
-        "fund_total": float(fund or 0),
+        "fund_total": 0.0,
         "enrollments": [r.to_dict() for r in records],
     }, "Welfare overview retrieved")
 
@@ -505,7 +503,6 @@ def _assistant_snapshot():
     inv = db.session.query(
         func.coalesce(func.sum(Invoice.net_amount), 0),
         func.coalesce(func.sum(Invoice.commission_amount), 0),
-        func.coalesce(func.sum(Invoice.welfare_amount), 0),
         func.coalesce(func.sum(Invoice.worker_payout), 0),
     ).first()
     heat = (
@@ -529,8 +526,8 @@ def _assistant_snapshot():
         "completed_jobs": Booking.query.filter_by(status="completed").count(),
         "revenue": float(inv[0] or 0),
         "commission": float(inv[1] or 0),
-        "welfare": float(inv[2] or 0),
-        "payouts": float(inv[3] or 0),
+        "welfare": 0.0,
+        "payouts": float(inv[2] or 0),
         "open_disputes": Dispute.query.filter(
             Dispute.status.in_(["open", "under_review", "awaiting_response"])).count(),
         "top_demand_areas": [{"area": a, "open_requests": n} for a, n in top_areas],

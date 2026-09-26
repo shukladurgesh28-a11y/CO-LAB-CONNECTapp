@@ -218,8 +218,8 @@ class GovernanceTestCase(unittest.TestCase):
         self.assertEqual(data["status"], "settled")
         self.assertEqual(float(data["gross_amount"]), 500.0)
         self.assertEqual(float(data["commission"]), 50.0)
-        self.assertEqual(float(data["welfare"]), 10.0)
-        self.assertEqual(float(data["worker_payout"]), 440.0)
+        self.assertNotIn("welfare", data)
+        self.assertEqual(float(data["worker_payout"]), 450.0)
 
         # Customer isolation: another customer cannot read the settlement.
         outsider = self.call("POST", "/api/auth/register", {

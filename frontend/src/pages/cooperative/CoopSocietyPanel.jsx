@@ -22,8 +22,8 @@ function OverviewCards({ data, requests }) {
         { label: 'Active Jobs', value: active, sub: 'In progress', tone: 'bg-emerald-50 text-emerald-700' },
         { label: 'Workers Available', value: workersAvailable, sub: `${data?.workers_total||0} total`, tone: 'bg-teal-50 text-teal-700' },
         { label: "Today's Revenue", value: inr(revenue), sub: 'Completed', tone: 'bg-indigo-50 text-indigo-700' },
-        { label: 'Worker Payouts', value: inr(revenue * 0.88), sub: '88% of revenue', tone: 'bg-cyan-50 text-cyan-700' },
-        { label: 'Welfare Contribution', value: inr(revenue * 0.02), sub: '2% of revenue', tone: 'bg-rose-50 text-rose-700' },
+        { label: 'Worker Payouts', value: inr(data?.worker_payouts ?? 0), sub: 'After 10% commission', tone: 'bg-cyan-50 text-cyan-700' },
+        { label: 'Co-op Commission', value: inr(data?.coop_commission ?? 0), sub: '10% platform fee', tone: 'bg-rose-50 text-rose-700' },
         { label: 'Pending Payments', value: requests.filter(r=>r.status==='completed').length, sub: 'Awaiting payout', tone: 'bg-orange-50 text-orange-700' },
       ].map((c) => (
         <div key={c.label} className="bg-white rounded-2xl border border-slate-200 p-4">

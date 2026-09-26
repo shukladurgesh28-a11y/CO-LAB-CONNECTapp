@@ -38,7 +38,6 @@ export interface Financials {
   service_charges: number;
   material_charges: number;
   commission_amount: number;
-  welfare_amount: number;
   worker_payout: number;
   total_amount: number;
   tax_amount: number;

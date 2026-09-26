@@ -9,9 +9,9 @@
 #   Render -> New -> Web Service -> rootDir: backend
 #
 # Money rates MUST stay in sync with backend/config.py + app/services/pricing.py
-# (COMMISSION_RATE 0.10, WELFARE_RATE 0.02, TAX_RATE 0.00). pricing.py is the
-# single source of truth and its defaults are Decimal("0.10")/Decimal("0.02").
-# Do not "tune" WELFARE_RATE here without changing pricing.py too.
+# (COMMISSION_RATE 0.10, TAX_RATE 0.00). pricing.py is the single source of
+# truth and its defaults are Decimal("0.10")/Decimal("0.00"). Commission is the
+# only deduction; there is no separate welfare or tax deduction.
 # =============================================================================
 services:
   - type: web
@@ -72,8 +72,6 @@ services:
       # -- Money rates (keep identical to backend/config.py + pricing.py) ------
       - key: COMMISSION_RATE
         value: "0.10"
-      - key: WELFARE_RATE
-        value: "0.02"
       - key: TAX_RATE
         value: "0.00"
       - key: COMMISSION_INCLUDE_MATERIAL
